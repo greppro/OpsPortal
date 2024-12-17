@@ -1,0 +1,70 @@
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/tools                --> ops-portal/handlers.GetTools (4 handlers)
+[GIN-debug] POST   /api/tools                --> ops-portal/handlers.CreateTool (4 handlers)
+[GIN-debug] PUT    /api/tools/:id            --> ops-portal/handlers.UpdateTool (4 handlers)
+[GIN-debug] DELETE /api/tools/:id            --> ops-portal/handlers.DeleteTool (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+Received request for environment: dev
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:10 | 200 |     375.543µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: prod
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:13 | 200 |     199.308µs |             ::1 | GET      "/api/tools?environment=prod"
+Received request for environment: dev
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:13 | 200 |      213.68µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: dev
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:15 | 200 |     191.104µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: dev
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:15 | 200 |     237.851µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: prod
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:16 | 200 |     181.129µs |             ::1 | GET      "/api/tools?environment=prod"
+Received request for environment: dev
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:17 | 200 |     195.859µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: dev
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:18 | 200 |     315.632µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: dev
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:18 | 200 |     234.935µs |             ::1 | GET      "/api/tools?environment=dev"
+[GIN] 2024/12/17 - 18:41:23 | 204 |       8.348µs |             ::1 | OPTIONS  "/api/tools"
+Received tool data: {ID:0 Name: Description: URL: Environment: Category: Icon: CreatedAt:0001-01-01 00:00:00 +0000 UTC UpdatedAt:0001-01-01 00:00:00 +0000 UTC}
+[GIN] 2024/12/17 - 18:41:23 | 201 |    8.381469ms |             ::1 | POST     "/api/tools"
+Received request for environment: dev
+Found 3 tools
+[GIN] 2024/12/17 - 18:41:23 | 200 |      198.28µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: prod
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:25 | 200 |     196.073µs |             ::1 | GET      "/api/tools?environment=prod"
+Received request for environment: dev
+Found 3 tools
+[GIN] 2024/12/17 - 18:41:26 | 200 |     188.439µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: prod
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:26 | 200 |     203.464µs |             ::1 | GET      "/api/tools?environment=prod"
+Received request for environment: dev
+Found 3 tools
+[GIN] 2024/12/17 - 18:41:28 | 200 |     179.515µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: prod
+Found 2 tools
+[GIN] 2024/12/17 - 18:41:28 | 200 |     185.988µs |             ::1 | GET      "/api/tools?environment=prod"
+Received request for environment: dev
+Found 3 tools
+[GIN] 2024/12/17 - 18:41:29 | 200 |      177.59µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: dev
+Found 3 tools
+[GIN] 2024/12/17 - 18:41:31 | 200 |     215.241µs |             ::1 | GET      "/api/tools?environment=dev"
+Received request for environment: dev
+Found 3 tools
+[GIN] 2024/12/17 - 18:41:32 | 200 |     243.221µs |             ::1 | GET      "/api/tools?environment=dev"
