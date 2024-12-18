@@ -1,7 +1,29 @@
 <template>
   <div class="management-container">
     <div class="actions">
-      <el-button type="primary" @click="showToolDialog()">添加工具</el-button>
+      <div class="left-actions">
+        <el-button type="primary" @click="showToolDialog()">添加网址</el-button>
+      </div>
+      <div class="right-actions">
+        <el-dropdown trigger="hover">
+          <span class="username-dropdown">
+            <span>{{ username }}</span>
+            <el-icon class="el-icon--right"><arrow-down /></el-icon>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="showChangePassword">
+                <el-icon><EditPen /></el-icon>
+                <span>修改密码</span>
+              </el-dropdown-item>
+              <el-dropdown-item @click="handleLogout">
+                <el-icon><SwitchButton /></el-icon>
+                <span>退出登录</span>
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
     </div>
     
     <el-tabs v-model="activeEnv" @tab-click="handleEnvChange">
@@ -24,7 +46,7 @@
     </el-tabs>
 
     <el-dialog 
-      :title="editingTool.id ? '编辑工具' : '添加工具'" 
+      :title="editingTool.id ? '编辑网址' : '添加网址'" 
       v-model="dialogVisible"
     >
       <el-form :model="editingTool" label-width="100px">
@@ -56,10 +78,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import ToolGrid from '../components/ToolGrid.vue'
+import { useRouter } from 'vue-router'
+import { ArrowDown, EditPen, SwitchButton } from '@element-plus/icons-vue'
 
 const activeEnv = ref('dev')
 const tools = ref([])
@@ -70,6 +94,18 @@ const editingTool = ref({
   url: '',
   environment: 'dev',
   category: ''
+})
+
+const router = useRouter()
+const emit = defineEmits(['showChangePassword'])
+
+const username = computed(() => {
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    const user = JSON.parse(userStr)
+    return user.username
+  }
+  return ''
 })
 
 const showToolDialog = (tool = null) => {
@@ -106,7 +142,7 @@ const saveTool = async () => {
 
 const handleDelete = async (id) => {
   try {
-    await ElMessageBox.confirm('确定要删除这个工具吗？', '提示', {
+    await ElMessageBox.confirm('确定要删除这个网址吗？', '提示', {
       type: 'warning'
     })
     await axios.delete(`http://localhost:8080/api/tools/${id}`)
@@ -137,4 +173,58 @@ watch(activeEnv, (newEnv) => {
 onMounted(() => {
   fetchTools(activeEnv.value)
 })
+
+const showChangePassword = () => {
+  emit('showChangePassword')
+}
+
+const handleLogout = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  ElMessage.success('已退出登录')
+  router.push('/')
+}
 </script>
+
+<style scoped>
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.left-actions,
+.right-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.username-dropdown {
+  font-size: 14px;
+  color: #606266;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.username-dropdown:hover {
+  background-color: #f5f7fa;
+}
+
+.el-dropdown-menu {
+  min-width: 120px;
+}
+
+.el-dropdown-menu :deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+}
+</style>
