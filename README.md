@@ -1,4 +1,3 @@
-"""
 # OpsPortal 运维导航平台
 
 OpsPortal 是一个专为运维团队设计的综合导航平台，旨在简化和优化公司内部常用工具和服务的访问与管理。通过 OpsPortal，用户可以轻松记录、分类和访问公司内部的各种运维工具，如 Grafana、Prometheus、Sentry 等，并根据不同的环境（如开发环境 Dev、生产环境 Prod 等）进行区分和管理。
@@ -163,4 +162,3 @@ MIT License
 ## 联系方式
 
 如有问题或建议，请提交 Issue 或 Pull Request。
-"""
