@@ -1,10 +1,12 @@
 package handlers
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"ops-portal/config"
 	"ops-portal/models"
+	"ops-portal/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 type LoginRequest struct {
@@ -36,37 +38,52 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	// 生成JWT token
+	token, err := utils.GenerateToken(user.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成token失败"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"token": "demo-token", // 实际项目中应该生成 JWT token
+		"token": token,
 		"user": gin.H{
 			"username": user.Username,
 		},
+		"expires_in": 24 * 60 * 60, // 24小时的秒数
 	})
 }
 
 func ChangePassword(c *gin.Context) {
-	var req ChangePasswordRequest
+	var req struct {
+		OldPassword string `json:"oldPassword"`
+		NewPassword string `json:"newPassword"`
+	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	// 获取当前用户
+	username := c.GetString("username")
 	var user models.User
-	if err := config.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
+	if err := config.DB.Where("username = ?", username).First(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取用户信息失败"})
 		return
 	}
 
+	// 验证旧密码
 	if user.Password != req.OldPassword {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "原密码错误"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "旧密码不正确"})
 		return
 	}
 
-	user.Password = req.NewPassword
-	if err := config.DB.Save(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "修改密码失败"})
+	// 更新密码
+	if err := config.DB.Model(&user).Update("password", req.NewPassword).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新密码失败"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "密码修改成功"})
-} 
+}

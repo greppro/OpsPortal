@@ -1,260 +1,178 @@
 <template>
   <el-container class="layout-container">
-    <el-header>
-      <div class="header-content">
-        <h2>OpsPortal 运维导航平台</h2>
-      </div>
-    </el-header>
-    <el-container class="main-container">
-      <el-aside width="200px">
-        <el-menu
-          :router="true"
-          class="el-menu-vertical"
-          :default-active="currentRoute"
-          background-color="#545c64"
-          text-color="#fff"
-          active-text-color="#ffd04b"
-        >
-          <el-menu-item index="/">
-            <el-icon><Monitor /></el-icon>
-            <span>网址导航</span>
-          </el-menu-item>
-          <el-menu-item index="/management">
-            <el-icon><Setting /></el-icon>
-            <span>网址管理</span>
-          </el-menu-item>
-        </el-menu>
-      </el-aside>
+    <el-aside width="200px" class="aside">
+      <div class="logo">OpsPortal运维导航</div>
+      <el-menu
+        :default-active="activeMenu"
+        class="menu"
+        router
+      >
+        <el-menu-item index="/monitor">
+          <el-icon><Monitor /></el-icon>
+          <span>网址导航</span>
+        </el-menu-item>
+        <el-menu-item index="/admin">
+          <el-icon><Setting /></el-icon>
+          <span>后台管理</span>
+          <el-tag size="small" type="warning" class="auth-tag" v-if="!isLoggedIn">
+            需要登录
+          </el-tag>
+        </el-menu-item>
+      </el-menu>
+    </el-aside>
+    
+    <el-container>
+      <el-header class="header" v-if="showUserInfo">
+        <div class="header-right">
+          <el-dropdown @command="handleCommand">
+            <span class="user-info">
+              <el-icon><User /></el-icon>
+              {{ username }}
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="changePassword">修改密码</el-dropdown-item>
+                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </el-header>
       
       <el-main>
-        <router-view @showChangePassword="showChangePassword = true"></router-view>
+        <router-view></router-view>
       </el-main>
     </el-container>
+    <ChangePasswordDialog ref="changePasswordDialogRef" />
   </el-container>
-
-  <el-dialog
-    v-model="showChangePassword"
-    title="修改密码"
-    width="400px"
-  >
-    <el-form
-      ref="passwordFormRef"
-      :model="passwordForm"
-      :rules="passwordRules"
-      label-width="100px"
-    >
-      <el-form-item label="原密码" prop="oldPassword">
-        <el-input
-          v-model="passwordForm.oldPassword"
-          type="password"
-          show-password
-          placeholder="请输入原密码"
-        />
-      </el-form-item>
-      <el-form-item label="新密码" prop="newPassword">
-        <el-input
-          v-model="passwordForm.newPassword"
-          type="password"
-          show-password
-          placeholder="请输入新密码"
-        />
-      </el-form-item>
-      <el-form-item label="确认密码" prop="confirmPassword">
-        <el-input
-          v-model="passwordForm.confirmPassword"
-          type="password"
-          show-password
-          placeholder="请再次输入新密码"
-        />
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="showChangePassword = false">取消</el-button>
-        <el-button type="primary" @click="handleChangePassword" :loading="changing">
-          确认
-        </el-button>
-      </span>
-    </template>
-  </el-dialog>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Monitor, Setting } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import axios from 'axios'
+import { Monitor, Setting, User } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import ChangePasswordDialog from './components/ChangePasswordDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
-const user = ref(null)
-const passwordFormRef = ref(null)
-const showChangePassword = ref(false)
-const changing = ref(false)
 
-const currentRoute = computed(() => route.path)
+const isLoggedIn = computed(() => !!localStorage.getItem('token'))
+const username = computed(() => localStorage.getItem('user') || '')
+const activeMenu = computed(() => route.path)
 
-const showUserInfo = computed(() => {
-  return route.path === '/management' && user.value
-})
+// 只在管理页面显示用户信息
+const showUserInfo = computed(() => isLoggedIn.value && route.path === '/admin')
 
-watch(
-  () => route.path,
-  () => {
-    const userStr = localStorage.getItem('user')
-    if (userStr) {
-      user.value = JSON.parse(userStr)
-    }
-  },
-  { immediate: true }
-)
+const changePasswordDialogRef = ref(null)
 
-const handleLogout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
-  user.value = null
-  ElMessage.success('已退出登录')
-  router.push('/')
-}
-
-const passwordForm = ref({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
-
-const passwordRules = {
-  oldPassword: [
-    { required: true, message: '请输入原密码', trigger: 'blur' },
-  ],
-  newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能小于6位', trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { required: true, message: '请再次输入新密码', trigger: 'blur' },
-    {
-      validator: (rule, value, callback) => {
-        if (value !== passwordForm.value.newPassword) {
-          callback(new Error('两次输入的密码不一致'))
-        } else {
-          callback()
+const handleCommand = async (command) => {
+  if (command === 'logout') {
+    // 显示确认对话框
+    try {
+      await ElMessageBox.confirm(
+        '确定要退出登录吗？',
+        '提示',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
         }
-      },
-      trigger: 'blur'
+      )
+      
+      // 清除用户信息
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      
+      ElMessage({
+        type: 'success',
+        message: '已退出登录，正在跳转...',
+        duration: 2000
+      })
+      
+      // 延迟跳转，让用户看到提示
+      setTimeout(() => {
+        router.push('/monitor')
+        // 触发页面刷新
+        window.location.reload()
+      }, 1000)
+    } catch {
+      // 用户取消退出
     }
-  ]
-}
-
-const handleChangePassword = async () => {
-  if (!passwordFormRef.value) return
-  
-  await passwordFormRef.value.validate(async (valid) => {
-    if (valid) {
-      changing.value = true
-      try {
-        const response = await axios.post('http://localhost:8080/api/auth/change-password', {
-          username: user.value.username,
-          oldPassword: passwordForm.value.oldPassword,
-          newPassword: passwordForm.value.newPassword
-        })
-        
-        ElMessage.success('密码修改成功')
-        showChangePassword.value = false
-        passwordForm.value = {
-          oldPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        }
-      } catch (error) {
-        ElMessage.error(error.response?.data?.error || '修改密码失败')
-      } finally {
-        changing.value = false
-      }
-    }
-  })
+  } else if (command === 'changePassword') {
+    changePasswordDialogRef.value?.show()
+  }
 }
 </script>
 
 <style scoped>
 .layout-container {
   height: 100vh;
-  display: flex;
-  flex-direction: column;
 }
 
-.main-container {
-  flex: 1;
-  overflow: hidden;
+.aside {
+  background-color: #304156;
+  color: #fff;
 }
 
-.el-header {
-  background-color: #409EFF;
-  color: white;
-  line-height: 80px;
-  height: 80px !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
-  padding: 0 20px;
-  z-index: 1000;
+.logo {
+  height: 60px;
+  line-height: 60px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  background-color: #2b2f3a;
 }
 
-.el-aside {
-  background-color: #545c64;
-  border-right: solid 1px #434a50;
-  height: 100%;
-}
-
-.el-main {
-  background-color: #f5f7fa;
-  padding: 20px;
-}
-
-.el-menu {
+.menu {
   border-right: none;
+  background-color: #304156;
 }
 
-.el-menu-item {
-  border-left: 3px solid transparent;
-}
-
-.el-menu-item.is-active {
-  border-left: 3px solid #ffd04b;
-  background-color: #434a50 !important;
-}
-
-.el-menu-item:hover {
-  background-color: #434a50 !important;
-}
-
-h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.header-content {
+.header {
+  background-color: #fff;
+  border-bottom: 1px solid #e6e6e6;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  max-width: 1400px;
-  margin: 0 auto;
-  height: 100%;
+  justify-content: flex-end;
+  padding: 0 20px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  cursor: pointer;
+  color: #606266;
 }
 
-.user-info .el-button {
-  color: white;
+.user-info .el-icon {
+  margin-right: 8px;
 }
 
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+:deep(.el-menu) {
+  border-right: none;
+}
+
+:deep(.el-menu-item) {
+  color: #bfcbd9;
+}
+
+:deep(.el-menu-item.is-active) {
+  color: #409EFF;
+  background-color: #263445;
+}
+
+:deep(.el-menu-item:hover) {
+  background-color: #263445;
+}
+
+.auth-tag {
+  margin-left: 8px;
 }
 </style>

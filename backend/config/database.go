@@ -1,73 +1,86 @@
 package config
 
 import (
-	"fmt"
+	"log"
+	"ops-portal/models"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"ops-portal/models"
 )
 
 var DB *gorm.DB
 
 func InitDB() {
-	// 数据库文件会保存在 data/ops_portal.db
-	db, err := gorm.Open(sqlite.Open("data/ops_portal.db"), &gorm.Config{})
+	var err error
+	DB, err = gorm.Open(sqlite.Open("data/opsportal.db"), &gorm.Config{})
 	if err != nil {
-		panic(fmt.Sprintf("failed to connect database: %v", err))
+		log.Fatal("Failed to connect to database:", err)
 	}
 
-	// 自动迁移
-	err = db.AutoMigrate(&models.Tool{}, &models.User{})
-	if err != nil {
-		panic(fmt.Sprintf("failed to auto migrate: %v", err))
+	// 自动迁移表结构
+	DB.AutoMigrate(&models.User{})
+	DB.AutoMigrate(&models.Tool{})
+
+	// 修改 Environment 模型的迁移
+	if err := DB.Migrator().DropTable(&models.Environment{}); err != nil {
+		log.Printf("Failed to drop environments table: %v", err)
 	}
 
-	// 插入测试数据
-	var count int64
-	// 检查是否存在默认用户
-	db.Model(&models.User{}).Count(&count)
-	if count == 0 {
-		db.Create(&models.User{
+	// 重新创建环境表
+	if err := DB.AutoMigrate(&models.Environment{}); err != nil {
+		log.Printf("Failed to migrate environments table: %v", err)
+	}
+
+	DB.AutoMigrate(&models.Project{})
+
+	// 初始化默认用户
+	var userCount int64
+	DB.Model(&models.User{}).Count(&userCount)
+	if userCount == 0 {
+		DB.Create(&models.User{
 			Username: "admin",
 			Password: "admin123",
 		})
 	}
 
-	// 检查是否存在工具数据
-	db.Model(&models.Tool{}).Count(&count)
-	if count == 0 {
-		tools := []models.Tool{
-			{
-				Name:        "Grafana Dev",
-				Description: "Grafana 开发环境监控面板",
-				URL:         "http://grafana-dev.example.com",
-				Environment: "dev",
-				Category:    "监控",
-			},
-			{
-				Name:        "Prometheus Dev",
-				Description: "Prometheus 开发环境监控系统",
-				URL:         "http://prometheus-dev.example.com",
-				Environment: "dev",
-				Category:    "监控",
-			},
-			{
-				Name:        "Jenkins Dev",
-				Description: "Jenkins 开发环境持续集成平台",
-				URL:         "http://jenkins-dev.example.com",
-				Environment: "dev",
-				Category:    "部署",
-			},
-			{
-				Name:        "GitLab Dev",
-				Description: "GitLab 开发环境代码仓库",
-				URL:         "http://gitlab-dev.example.com",
-				Environment: "dev",
-				Category:    "代码",
-			},
+	// 初始化默认项目
+	var projCount int64
+	DB.Model(&models.Project{}).Count(&projCount)
+	if projCount == 0 {
+		defaultProjects := []models.Project{
+			{Name: "default", Label: "默认项目"},
+			{Name: "project-a", Label: "项目A"},
+			{Name: "project-b", Label: "项目B"},
 		}
-		db.Create(&tools)
+		for _, proj := range defaultProjects {
+			DB.Create(&proj)
+		}
 	}
 
-	DB = db
-} 
+	// 初始化默认环境
+	var envCount int64
+	DB.Model(&models.Environment{}).Count(&envCount)
+	if envCount == 0 {
+		// 获取默认项目
+		var defaultProject models.Project
+		DB.Where("name = ?", "default").First(&defaultProject)
+
+		defaultEnvs := []models.Environment{
+			{
+				Name:      "dev",
+				Label:     "开发环境",
+				ProjectID: defaultProject.ID,
+				Project:   defaultProject.Name,
+			},
+			{
+				Name:      "prod",
+				Label:     "生产环境",
+				ProjectID: defaultProject.ID,
+				Project:   defaultProject.Name,
+			},
+		}
+		for _, env := range defaultEnvs {
+			DB.Create(&env)
+		}
+	}
+}

@@ -1,4 +1,3 @@
-
 services:
   frontend:
     build: ./frontend
@@ -7,7 +6,7 @@ services:
     depends_on:
       - backend
     networks:
-      - ops-portal-network
+      - app-network
 
   backend:
     build: ./backend
@@ -15,9 +14,14 @@ services:
       - "8080:8080"
     volumes:
       - ./backend/data:/app/data
+    environment:
+      - DB_PATH=/app/data/ops.db
     networks:
-      - ops-portal-network
+      - app-network
 
 networks:
-  ops-portal-network:
-    driver: bridge 
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data: 
