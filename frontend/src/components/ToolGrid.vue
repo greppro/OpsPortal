@@ -1,13 +1,16 @@
 <template>
   <div class="tool-grid">
-    <el-row :gutter="16">
+    <el-row :gutter="20">
       <el-col :xs="12" :sm="8" :md="6" :lg="4" v-for="tool in tools" :key="tool.id">
         <el-card class="tool-card" shadow="hover">
           <div class="content-wrapper">
             <div class="tool-icon">
-              <el-icon :size="28" :color="getIconColor(tool.category)">
-                <component :is="getToolIcon(tool.name)" />
-              </el-icon>
+              <img 
+                :src="getToolIcon(tool.name)" 
+                :alt="tool.name"
+                @error="handleIconError"
+                class="icon-image"
+              />
             </div>
             <h3>{{ tool.name }}</h3>
             <p>{{ tool.description }}</p>
@@ -24,8 +27,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
-import { Monitor, DataLine, Connection, List, Link } from '@element-plus/icons-vue'
+import { ref } from 'vue'
 
 const props = defineProps({
   tools: {
@@ -40,26 +42,22 @@ const props = defineProps({
 
 const emit = defineEmits(['edit', 'delete'])
 
+const defaultIcon = ref('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2NjYyIgZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgMThjLTQuNDEgMC04LTMuNTktOC04czMuNTktOCA4LTggOCAzLjU5IDggOC0zLjU5IDgtOCA4eiIvPjwvc3ZnPg==')
+
+// 获取工具图标
+const getToolIcon = (name) => {
+  const toolName = name.toLowerCase().trim()
+  // 尝试从 simpleicons.org 获取图标
+  return `https://simpleicons.org/icons/${toolName}.svg`
+}
+
+// 处理图标加载错误
+const handleIconError = (e) => {
+  e.target.src = defaultIcon.value
+}
+
 const openTool = (url) => {
   window.open(url, '_blank')
-}
-
-const getToolIcon = (name) => {
-  const lowerName = name.toLowerCase()
-  if (lowerName.includes('grafana')) return Monitor
-  if (lowerName.includes('prometheus')) return DataLine
-  if (lowerName.includes('jenkins')) return Connection
-  if (lowerName.includes('gitlab')) return List
-  return Link
-}
-
-const getIconColor = (category) => {
-  switch (category?.toLowerCase()) {
-    case '监控': return '#409EFF'
-    case '部署': return '#67C23A'
-    case '日志': return '#E6A23C'
-    default: return '#909399'
-  }
 }
 </script>
 
@@ -73,21 +71,11 @@ const getIconColor = (category) => {
   text-align: center;
   height: 180px;
   transition: all 0.3s;
-  display: flex;
-  flex-direction: column;
 }
 
 .tool-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
-}
-
-.el-card__body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 12px !important;
-  justify-content: space-between;
 }
 
 .content-wrapper {
@@ -102,6 +90,13 @@ const getIconColor = (category) => {
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 40px;
+}
+
+.icon-image {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 h3 {

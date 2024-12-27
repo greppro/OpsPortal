@@ -58,6 +58,7 @@
     "environment": "string",
     "project": "string",
     "category": "string",
+    "icon": "string",
     "created_at": "datetime",
     "updated_at": "datetime"
   }]
@@ -199,7 +200,7 @@ json
 - 500: 服务器内部错误
 
 ### 开发说明
-1. 默认用户名密码：
+1. 默认用��名密码：
    - 用户名：admin
    - 密码：admin123
 
@@ -226,3 +227,8 @@ json
 4. 密码规则:
    - 长度至少8位
    - 必须包含字母和数字
+
+### 图标规则说明
+系统会根据网址名称自动匹配图标：
+1. 包含 "docker" - 使用 Docker 官方图标
+2. 其他图标规则可以根据需要添加
