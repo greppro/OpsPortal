@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+  frontend:
+    environment:
+      - NODE_ENV=production
+      - VITE_BACKEND_URL=http://api.example.com  # 可以根据实际部署环境修改 
