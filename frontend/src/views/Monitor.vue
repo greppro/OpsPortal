@@ -20,6 +20,7 @@
 
       <div class="tabs-header">
         <el-tabs v-model="activeEnv" @tab-click="handleEnvChange">
+          <el-tab-pane label="所有环境" name="" />
           <el-tab-pane 
             v-for="env in filteredEnvironments" 
             :key="env.id" 
@@ -72,10 +73,6 @@ const fetchEnvironments = async () => {
   try {
     const res = await request.get('/api/environments')
     environments.value = res.data
-    if (environments.value.length > 0) {
-      activeEnv.value = environments.value[0].name
-      fetchTools()
-    }
   } catch (error) {
     console.error('Error fetching environments:', error)
     ElMessage.error('获取环境列表失败')
@@ -90,14 +87,11 @@ const fetchTools = async () => {
     
     if (activeEnv.value) {
       params.env = activeEnv.value
-      console.log('Fetching tools for env:', activeEnv.value)
     }
     if (activeProject.value) {
       params.project = activeProject.value
-      console.log('Fetching tools for project:', activeProject.value)
     }
 
-    console.log('Request params:', params)
     const response = await request.get(url, { params })
     tools.value = response.data
   } catch (error) {
@@ -111,7 +105,7 @@ const handleProjectChange = () => {
   if (filteredEnvironments.value.length > 0) {
     const currentEnvExists = filteredEnvironments.value.some(env => env.name === activeEnv.value)
     if (!currentEnvExists) {
-      activeEnv.value = filteredEnvironments.value[0].name
+      activeEnv.value = ''  // 重置为显示所有环境
     }
   }
   fetchTools()
@@ -120,13 +114,13 @@ const handleProjectChange = () => {
 // 处理环境变更
 const handleEnvChange = (tab) => {
   activeEnv.value = tab.paneName
-  console.log('Environment changed to:', activeEnv.value)
   fetchTools()
 }
 
 onMounted(async () => {
   await fetchProjects()
   await fetchEnvironments()
+  fetchTools()  // 初始加载所有工具
 })
 </script>
 
