@@ -78,12 +78,6 @@
         <el-form-item label="描述" prop="description">
           <el-input v-model="form.description" type="textarea" />
         </el-form-item>
-        <el-form-item label="环境" prop="environment">
-          <environment-select
-            v-model="form.environment"
-            :project-id="getProjectId(form.project)"
-          />
-        </el-form-item>
         <el-form-item label="项目" prop="project">
           <el-select v-model="form.project" style="width: 100%">
             <el-option
@@ -93,6 +87,12 @@
               :value="proj.name"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="环境" prop="environment">
+          <environment-select
+            v-model="form.environment"
+            :project-id="getProjectId(form.project)"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -134,8 +134,8 @@ const form = ref({
 const rules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
   url: [{ required: true, message: '请输入地址', trigger: 'blur' }],
-  environment: [{ required: true, message: '请选择环境', trigger: 'change' }],
-  project: [{ required: true, message: '请选择项目', trigger: 'change' }]
+  project: [{ required: true, message: '请选择项目', trigger: 'change' }],
+  environment: [{ required: true, message: '请选择环境', trigger: 'change' }]
 }
 
 // 筛选网址
