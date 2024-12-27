@@ -1,32 +1,38 @@
 <template>
   <div class="tools-container">
-    <div class="filter-header">
-      <el-select 
-        v-model="activeProject" 
-        placeholder="选择项目"
-        clearable
-        @change="handleProjectChange"
-        style="width: 200px"
-      >
-        <el-option 
-          v-for="proj in projects" 
-          :key="proj.id" 
-          :label="proj.label" 
-          :value="proj.name"
-        />
-      </el-select>
+    <div class="tools-header">
+      <div class="filter-header">
+        <el-select 
+          v-model="activeProject" 
+          placeholder="选择项目"
+          clearable
+          @change="handleProjectChange"
+          style="width: 200px"
+        >
+          <el-option 
+            v-for="proj in projects" 
+            :key="proj.id" 
+            :label="proj.label" 
+            :value="proj.name"
+          />
+        </el-select>
+      </div>
+
+      <div class="tabs-header">
+        <el-tabs v-model="activeEnv" @tab-click="handleEnvChange">
+          <el-tab-pane 
+            v-for="env in filteredEnvironments" 
+            :key="env.id" 
+            :label="env.label" 
+            :name="env.name"
+          />
+        </el-tabs>
+      </div>
     </div>
 
-    <el-tabs v-model="activeEnv" @tab-click="handleEnvChange">
-      <el-tab-pane 
-        v-for="env in filteredEnvironments" 
-        :key="env.id" 
-        :label="env.label" 
-        :name="env.name"
-      >
-        <tool-grid :tools="tools" />
-      </el-tab-pane>
-    </el-tabs>
+    <div class="tools-content">
+      <tool-grid :tools="tools" />
+    </div>
   </div>
 </template>
 
@@ -126,19 +132,35 @@ onMounted(async () => {
 
 <style scoped>
 .tools-container {
+  height: 100%;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tools-header {
+  flex-shrink: 0;
 }
 
 .filter-header {
   margin-bottom: 20px;
 }
 
-:deep(.el-tabs__header) {
+.tabs-header {
   margin-bottom: 20px;
 }
 
+.tools-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+:deep(.el-tabs__header) {
+  margin-bottom: 0;
+}
+
 :deep(.el-tabs__nav-wrap) {
-  padding: 0 20px;
+  padding: 0;
 }
 
 :deep(.el-tabs__item) {

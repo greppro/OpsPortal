@@ -21,7 +21,7 @@
       </el-menu>
     </el-aside>
     
-    <el-container>
+    <el-container class="main-container">
       <el-header class="header" v-if="showUserInfo">
         <div class="header-right">
           <el-dropdown @command="handleCommand">
@@ -39,7 +39,7 @@
         </div>
       </el-header>
       
-      <el-main>
+      <el-main class="main-content">
         <router-view></router-view>
       </el-main>
     </el-container>
@@ -108,11 +108,25 @@ const handleCommand = async (command) => {
 <style scoped>
 .layout-container {
   height: 100vh;
+  overflow: hidden;
 }
 
 .aside {
   background-color: #304156;
   color: #fff;
+  height: 100vh;
+  overflow-y: hidden;
+}
+
+.main-container {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content {
+  padding: 0;
+  height: calc(100vh - 60px);
+  overflow-y: hidden;
 }
 
 .logo {
