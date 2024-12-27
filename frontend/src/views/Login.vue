@@ -2,29 +2,31 @@
   <div class="login-container">
     <el-card class="login-card">
       <template #header>
-        <h2 class="login-title">登录</h2>
+        <h3 class="login-title">登录</h3>
       </template>
       
       <el-form
         ref="formRef"
         :model="form"
         :rules="rules"
-        label-width="80px"
+        label-width="0"
         @keyup.enter="handleSubmit"
       >
-        <el-form-item label="用户名" prop="username">
+        <el-form-item prop="username">
           <el-input 
             v-model="form.username" 
             placeholder="请输入用户名"
+            :prefix-icon="User"
             :disabled="loading"
           />
         </el-form-item>
-        <el-form-item label="密码" prop="password">
+        <el-form-item prop="password">
           <el-input 
             v-model="form.password" 
             type="password" 
             show-password
             placeholder="请输入密码"
+            :prefix-icon="Lock"
             :disabled="loading"
           />
         </el-form-item>
@@ -108,24 +110,47 @@ const handleSubmit = async () => {
 
 <style scoped>
 .login-container {
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 40px;
+  background-color: #f5f7fa;
 }
 
 .login-card {
   width: 400px;
+  margin-bottom: 150px;
 }
 
-.login-card :deep(.el-card__header) {
-  text-align: center;
-  padding: 15px;
-}
-
-h2.login-title {
+.login-title {
   margin: 0;
-  font-size: 18px;
+  text-align: center;
+  font-size: 20px;
   color: #303133;
+}
+
+:deep(.el-card__header) {
+  padding: 20px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+:deep(.el-card__body) {
+  padding: 30px;
+}
+
+:deep(.el-form-item:last-child) {
+  margin-bottom: 0;
+}
+
+:deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+}
+
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #c0c4cc inset;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #409eff inset;
 }
 </style> 
