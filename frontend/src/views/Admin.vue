@@ -16,7 +16,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import Manage from './Manage.vue'
-import Environment from './Environment.vue'
+import Environment from './EnvironmentManage.vue'
 import Project from './Project.vue'
 
 const activeTab = ref('sites')
