@@ -11,10 +11,28 @@ import (
 // GetTools 获取工具列表
 func GetTools(c *gin.Context) {
 	var tools []models.Tool
-	if err := config.DB.Find(&tools).Error; err != nil {
+
+	// 获取查询参数
+	env := c.Query("env")
+	project := c.Query("project")
+
+	// 构建查询
+	query := config.DB.Model(&models.Tool{})
+
+	// 添加筛选条件
+	if env != "" {
+		query = query.Where("environment = ?", env)
+	}
+	if project != "" {
+		query = query.Where("project = ?", project)
+	}
+
+	// 执行查询
+	if err := query.Find(&tools).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取工具列表失败"})
 		return
 	}
+
 	c.JSON(http.StatusOK, tools)
 }
 
@@ -63,7 +81,7 @@ func DeleteTool(c *gin.Context) {
 	var tool models.Tool
 
 	if err := config.DB.First(&tool, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "工具不存在"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "工具不存���"})
 		return
 	}
 

@@ -1,10 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Monitor from '../views/Monitor.vue'
-import Admin from '../views/Admin.vue'
-import Login from '../views/Login.vue'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
@@ -12,29 +9,26 @@ const router = createRouter({
     },
     {
       path: '/monitor',
-      name: 'Monitor',
-      component: Monitor
+      name: 'monitor',
+      component: () => import('../views/Monitor.vue')
     },
     {
       path: '/admin',
-      name: 'Admin',
-      component: Admin,
+      name: 'admin',
+      component: () => import('../views/Admin.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/login',
-      name: 'Login',
-      component: Login
+      name: 'login',
+      component: () => import('../views/Login.vue')
     }
   ]
 })
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  const isLoggedIn = !!localStorage.getItem('token')
-  
-  if (to.meta.requiresAuth && !isLoggedIn) {
-    // 保存尝试访问的路径
+  if (to.meta.requiresAuth && !localStorage.getItem('token')) {
     localStorage.setItem('redirectPath', to.fullPath)
     next('/login')
   } else {
