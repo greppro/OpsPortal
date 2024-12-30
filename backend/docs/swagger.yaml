@@ -1,0 +1,120 @@
+basePath: /api
+definitions:
+  handlers.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  models.ChangePasswordRequest:
+    properties:
+      newPassword:
+        example: newpass123
+        type: string
+      oldPassword:
+        example: oldpass123
+        type: string
+    required:
+    - newPassword
+    - oldPassword
+    type: object
+  models.ErrorResponse:
+    properties:
+      message:
+        example: Invalid credentials
+        type: string
+    type: object
+  models.LoginResponse:
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+    type: object
+  models.SuccessResponse:
+    properties:
+      message:
+        example: Operation successful
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: OpsPortal运维导航平台的API文档
+  title: OpsPortal API
+  version: "1.0"
+paths:
+  /auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: 修改用户密码
+      parameters:
+      - description: 密码信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 修改密码
+      tags:
+      - 认证
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 用户登录接口
+      parameters:
+      - description: 登录信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: 用户登录
+      tags:
+      - 认证
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

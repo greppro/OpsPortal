@@ -5,9 +5,25 @@ import (
 	"ops-portal/handlers"
 	"ops-portal/middleware"
 
+	_ "ops-portal/docs"
+
+	"time"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+// @title OpsPortal API
+// @version 1.0
+// @description OpsPortal运维导航平台的API文档
+// @host localhost:3000
+// @BasePath /api
+// @schemes http https
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 
 func main() {
 	// 初始化数据库
@@ -22,18 +38,27 @@ func main() {
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
 	}))
 
+	// Swagger 文档路由
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler,
+		ginSwagger.URL("http://localhost:3000/swagger/doc.json"),
+		ginSwagger.DefaultModelsExpandDepth(-1),
+		ginSwagger.DocExpansion("none"),
+		ginSwagger.InstanceName("swagger"),
+	))
+
 	// 公开路由组
-	public := r.Group("/api")
+	public := r.Group("")
 	{
 		// 认证相关
-		public.POST("/auth/login", handlers.Login)
+		public.POST("/api/auth/login", handlers.Login)
 
 		// 公开查询接口
-		public.GET("/sites", handlers.GetTools)
-		public.GET("/environments", handlers.GetEnvironmentsByProject)
-		public.GET("/projects", handlers.GetProjects)
+		public.GET("/api/sites", handlers.GetTools)
+		public.GET("/api/environments", handlers.GetEnvironmentsByProject)
+		public.GET("/api/projects", handlers.GetProjects)
 	}
 
 	// 需要认证的路由组

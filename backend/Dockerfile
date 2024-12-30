@@ -7,6 +7,9 @@ WORKDIR /app
 # 安装编译所需的工具和依赖
 RUN apk add --no-cache gcc musl-dev sqlite-dev
 
+# 安装 swag 工具
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
 # 启用 CGO (SQLite需要)
 ENV CGO_ENABLED=1
 ENV GOOS=linux
@@ -17,6 +20,9 @@ RUN go mod download
 
 # 复制源代码
 COPY . .
+
+# 生成 Swagger 文档
+RUN swag init
 
 # 编译
 RUN go build -o main

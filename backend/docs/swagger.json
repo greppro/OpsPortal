@@ -1,0 +1,182 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "OpsPortal运维导航平台的API文档",
+        "title": "OpsPortal API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:3000",
+    "basePath": "/api",
+    "paths": {
+        "/auth/change-password": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "修改用户密码",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "认证"
+                ],
+                "summary": "修改密码",
+                "parameters": [
+                    {
+                        "description": "密码信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "description": "用户登录接口",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "认证"
+                ],
+                "summary": "用户登录",
+                "parameters": [
+                    {
+                        "description": "登录信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "newPassword",
+                "oldPassword"
+            ],
+            "properties": {
+                "newPassword": {
+                    "type": "string",
+                    "example": "newpass123"
+                },
+                "oldPassword": {
+                    "type": "string",
+                    "example": "oldpass123"
+                }
+            }
+        },
+        "models.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Invalid credentials"
+                }
+            }
+        },
+        "models.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIs..."
+                }
+            }
+        },
+        "models.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Operation successful"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

@@ -162,3 +162,15 @@ MIT License
 ## 联系方式
 
 如有问题或建议，请提交 Issue 或 Pull Request。
+
+## 开发环境
+
+- 前端开发服务器：http://localhost:3000
+- 后端 API 服务器：http://localhost:8080
+- Swagger 文档：http://localhost:8080/swagger/index.html
+
+## 生产环境
+
+- 前端应用：http://your-domain
+- 后端 API：http://your-domain/api
+- Swagger 文档：http://your-domain/swagger/index.html

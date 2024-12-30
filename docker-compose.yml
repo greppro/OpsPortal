@@ -10,8 +10,14 @@ services:
       - ./data:/app/data
     environment:
       - TZ=Asia/Shanghai
+      - GIN_MODE=release
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
     build:
@@ -19,7 +25,8 @@ services:
       dockerfile: Dockerfile
     container_name: opsportal-frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "80:80"
     environment:
