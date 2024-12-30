@@ -8,7 +8,13 @@ type LoginRequest struct {
 
 // LoginResponse 登录响应
 type LoginResponse struct {
-	Token string `json:"token" example:"eyJhbGciOiJIUzI1NiIs..."`
+	Token string   `json:"token" example:"eyJhbGciOiJIUzI1NiIs..."`
+	User  UserInfo `json:"user"`
+}
+
+// UserInfo 用户信息
+type UserInfo struct {
+	Username string `json:"username" example:"admin"`
 }
 
 // ChangePasswordRequest 修改密码请求

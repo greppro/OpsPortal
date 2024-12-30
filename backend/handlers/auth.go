@@ -44,7 +44,13 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.LoginResponse{Token: token})
+	// 返回登录响应
+	c.JSON(http.StatusOK, models.LoginResponse{
+		Token: token,
+		User: models.UserInfo{
+			Username: req.Username,
+		},
+	})
 }
 
 // @Summary 修改密码

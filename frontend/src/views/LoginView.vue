@@ -23,15 +23,14 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
-import axios from 'axios'
+import request from '@/utils/request'
 
 const router = useRouter()
-const loading = ref(false)
 const loginForm = ref({
   username: '',
   password: ''
 })
+const loading = ref(false)
 
 const handleLogin = async () => {
   if (!loginForm.value.username || !loginForm.value.password) {
@@ -41,17 +40,25 @@ const handleLogin = async () => {
   
   loading.value = true
   try {
-    const response = await axios.post('http://localhost:8080/api/auth/login', {
-      username: loginForm.value.username,
-      password: loginForm.value.password
+    const response = await request({
+      url: '/api/auth/login',
+      method: 'post',
+      data: {
+        username: loginForm.value.username,
+        password: loginForm.value.password
+      }
     })
     
-    localStorage.setItem('token', response.data.token)
-    localStorage.setItem('user', JSON.stringify(response.data.user))
-    ElMessage.success('登录成功')
-    router.push('/management')
+    if (response.data && response.data.token) {
+      localStorage.setItem('token', response.data.token)
+      ElMessage.success('登录成功')
+      router.push('/monitor')
+    } else {
+      throw new Error('登录响应数据格式错误')
+    }
   } catch (error) {
-    ElMessage.error(error.response?.data?.error || '登录失败')
+    console.error('登录错误:', error)
+    ElMessage.error(error.response?.data?.message || '登录失败')
   } finally {
     loading.value = false
   }
