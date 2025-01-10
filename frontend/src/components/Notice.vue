@@ -62,11 +62,13 @@
     left: 0;
     right: 0;
     height: 40px;
-    background-color: #e6f7ff;
+    background: linear-gradient(to right, #9c27b0, #673ab7);
     display: flex;
     align-items: center;
+    justify-content: center;
     padding: 0 20px 0 220px;
     z-index: 1000;
+    color: #fff;
   }
   
   .notice-content {
@@ -74,10 +76,15 @@
     overflow: hidden;
     white-space: nowrap;
     margin-right: 20px;
+    text-align: center;
   }
   
   .scroll {
-    animation: scroll-left 20s linear infinite;
+    animation: scroll-left 30s linear infinite;
+  }
+  
+  .scroll:hover {
+    animation-play-state: paused;
   }
   
   @keyframes scroll-left {
@@ -91,10 +98,10 @@
   
   .close-icon {
     cursor: pointer;
-    color: #909399;
+    color: rgba(255, 255, 255, 0.8);
   }
   
   .close-icon:hover {
-    color: #606266;
+    color: #ffffff;
   }
   </style>
