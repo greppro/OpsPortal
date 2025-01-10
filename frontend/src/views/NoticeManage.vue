@@ -95,7 +95,7 @@ const handleAdd = () => {
 const handleEdit = (row) => {
   dialogType.value = 'edit'
   form.value = {
-    id: row.id,
+    ID: row.ID,
     content: row.content,
     active: row.active
   }
@@ -107,7 +107,11 @@ const handleDelete = async (row) => {
     await ElMessageBox.confirm('确定要删除该公告吗？', '提示', {
       type: 'warning'
     })
-    await deleteNotice(row.id)
+    if (!row.ID) {
+      ElMessage.error('无效的公告ID')
+      return
+    }
+    await deleteNotice(row.ID)
     ElMessage.success('删除成功')
     fetchNoticeList()
   } catch (error) {
@@ -128,8 +132,12 @@ const handleSubmit = async () => {
           await createNotice(form.value)
           ElMessage.success('添加成功')
         } else {
-          const { id, ...data } = form.value
-          await updateNotice(id, data)
+          const { ID, ...data } = form.value
+          if (!ID) {
+            ElMessage.error('无效的公告ID')
+            return
+          }
+          await updateNotice(ID, data)
           ElMessage.success('更新成功')
         }
         dialogVisible.value = false
@@ -144,6 +152,7 @@ const handleSubmit = async () => {
 
 const resetForm = () => {
   form.value = {
+    ID: undefined,
     content: '',
     active: true
   }

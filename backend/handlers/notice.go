@@ -48,9 +48,12 @@ func CreateNotice(c *gin.Context) {
 // UpdateNotice 更新公告
 func UpdateNotice(c *gin.Context) {
 	id := c.Param("id")
-	var notice models.Notice
+	if id == "" || id == "undefined" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的公告ID"})
+		return
+	}
 
-	// 先查找现有公告
+	var notice models.Notice
 	if err := config.DB.First(&notice, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "公告不存在"})
 		return
@@ -88,6 +91,11 @@ func UpdateNotice(c *gin.Context) {
 // DeleteNotice 删除公告
 func DeleteNotice(c *gin.Context) {
 	id := c.Param("id")
+	if id == "" || id == "undefined" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的公告ID"})
+		return
+	}
+
 	if err := config.DB.Delete(&models.Notice{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除公告失败"})
 		return
