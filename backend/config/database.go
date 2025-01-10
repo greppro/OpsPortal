@@ -83,4 +83,10 @@ func InitDB() {
 			DB.Create(&env)
 		}
 	}
+
+	// 自动迁移 Notice 模型
+	err = DB.AutoMigrate(&models.Notice{})
+	if err != nil {
+		log.Fatal("Failed to migrate Notice model:", err)
+	}
 }

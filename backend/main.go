@@ -59,6 +59,10 @@ func main() {
 		public.GET("/api/sites", handlers.GetTools)
 		public.GET("/api/environments", handlers.GetEnvironmentsByProject)
 		public.GET("/api/projects", handlers.GetProjects)
+
+		// 公告相关的公开接口
+		public.GET("/api/notices/active", handlers.GetActiveNotice) // 获取当前激活的公告
+		public.GET("/api/notices", handlers.GetNotices)             // 获取公告列表
 	}
 
 	// 需要认证的路由组
@@ -82,6 +86,11 @@ func main() {
 		auth.POST("/projects", handlers.CreateProject)
 		auth.PUT("/projects/:id", handlers.UpdateProject)
 		auth.DELETE("/projects/:id", handlers.DeleteProject)
+
+		// 公告管理相关接口
+		auth.POST("/notices", handlers.CreateNotice)
+		auth.PUT("/notices/:id", handlers.UpdateNotice)
+		auth.DELETE("/notices/:id", handlers.DeleteNotice)
 	}
 
 	r.Run(":8080")

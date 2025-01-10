@@ -1,5 +1,6 @@
 <template>
-  <el-container class="layout-container">
+  <Notice @notice-visible-change="handleNoticeVisibleChange" />
+  <el-container class="layout-container" :class="{ 'no-notice': !showNoticeBar }">
     <el-aside width="200px" class="aside">
       <div class="logo">OpsPortal运维导航</div>
       <el-menu
@@ -53,6 +54,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { Monitor, Setting, User } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ChangePasswordDialog from './components/ChangePasswordDialog.vue'
+import Notice from './components/Notice.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -103,30 +105,42 @@ const handleCommand = async (command) => {
     changePasswordDialogRef.value?.show()
   }
 }
+
+const showNoticeBar = ref(true)
+
+const handleNoticeVisibleChange = (visible) => {
+  showNoticeBar.value = visible
+}
 </script>
 
 <style scoped>
 .layout-container {
   height: 100vh;
+  padding-top: 40px;
   overflow: hidden;
+  transition: padding-top 0.3s;
+}
+
+.layout-container.no-notice {
+  padding-top: 0;
 }
 
 .aside {
   background-color: #304156;
   color: #fff;
-  height: 100vh;
+  height: 100%;
   overflow-y: hidden;
 }
 
 .main-container {
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
 }
 
 .main-content {
   padding: 0;
-  height: calc(100vh - 60px);
-  overflow-y: hidden;
+  height: calc(100% - 60px);
+  overflow-y: auto;
 }
 
 .logo {
@@ -188,5 +202,9 @@ const handleCommand = async (command) => {
 
 .auth-tag {
   margin-left: 8px;
+}
+
+.app-container {
+  margin-top: 40px;
 }
 </style>

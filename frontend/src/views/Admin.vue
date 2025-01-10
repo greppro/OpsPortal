@@ -5,6 +5,7 @@
         <el-tab-pane label="网址管理" name="sites" />
         <el-tab-pane label="环境管理" name="environments" />
         <el-tab-pane label="项目管理" name="projects" />
+        <el-tab-pane label="公告管理" name="notices" />
       </el-tabs>
     </div>
     <div class="page-content">
@@ -18,6 +19,7 @@ import { ref, computed } from 'vue'
 import Manage from './Manage.vue'
 import Environment from './EnvironmentManage.vue'
 import Project from './Project.vue'
+import NoticeManage from './NoticeManage.vue'
 
 const activeTab = ref('sites')
 
@@ -26,7 +28,8 @@ const currentComponent = computed(() => {
   const components = {
     sites: Manage,
     environments: Environment,
-    projects: Project
+    projects: Project,
+    notices: NoticeManage
   }
   return components[activeTab.value]
 })
