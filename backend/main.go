@@ -4,6 +4,8 @@ import (
 	"ops-portal/config"
 	"ops-portal/handlers"
 	"ops-portal/middleware"
+	"log"
+	"os"
 
 	_ "ops-portal/docs"
 
@@ -25,7 +27,26 @@ import (
 // @in header
 // @name Authorization
 
+// 初始化必要的目录
+func initDirectories() {
+	dirs := []string{
+		"data",
+		"uploads",
+		"uploads/logos",
+	}
+
+	for _, dir := range dirs {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			log.Fatalf("Failed to create directory %s: %v", dir, err)
+		}
+	}
+}
+
 func main() {
+	// 初始化目录
+	initDirectories()
+
 	// 初始化数据库
 	config.InitDB()
 
