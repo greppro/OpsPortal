@@ -206,7 +206,7 @@ onMounted(() => {
 
 .main-content {
   padding: 0;
-  height: calc(100% - 60px);
+  height: calc(100% - 64px);
   overflow-y: auto;
 }
 
@@ -232,18 +232,23 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
+  height: 64px;
 }
 
 .header-logo {
+  position: relative;
+  flex: 1;
   height: 100%;
-  display: flex;
-  align-items: center;
 }
 
 .site-logo {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   max-height: 40px;
-  max-width: 200px;
+  max-width: 180px;
   object-fit: contain;
+  display: block;
 }
 
 .system-title {
@@ -259,6 +264,7 @@ onMounted(() => {
 .header-right {
   display: flex;
   align-items: center;
+  margin-left: auto;
 }
 
 .user-info {
