@@ -10,10 +10,10 @@
           <div class="content-wrapper">
             <div class="tool-icon">
               <img 
-                :src="getToolIcon(tool.name)" 
+                :src="getFavicon(tool.url)"
                 :alt="tool.name"
-                @error="handleIconError"
                 class="icon-image"
+                @error="handleIconError(tool)"
               />
             </div>
             <h3>{{ tool.name }}</h3>
@@ -30,8 +30,6 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-
 const props = defineProps({
   tools: {
     type: Array,
@@ -45,18 +43,34 @@ const props = defineProps({
 
 const emit = defineEmits(['edit', 'delete'])
 
-const defaultIcon = ref('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2NjYyIgZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgMThjLTQuNDEgMC04LTMuNTktOC04czMuNTktOCA4LTggOCAzLjU5IDggOC0zLjU5IDgtOCA4eiIvPjwvc3ZnPg==')
-
-// 获取工具图标
-const getToolIcon = (name) => {
-  const toolName = name.toLowerCase().trim()
-  // 尝试从 simpleicons.org 获取图标
-  return `https://simpleicons.org/icons/${toolName}.svg`
+// 获取网站favicon
+const getFavicon = (url) => {
+  try {
+    const urlObj = new URL(url)
+    // 优先尝试获取高清图标
+    return `${urlObj.protocol}//${urlObj.hostname}/favicon.ico`
+  } catch (error) {
+    return '/default-icon.svg'
+  }
 }
 
-// 处理图标加载错误
-const handleIconError = (e) => {
-  e.target.src = defaultIcon.value
+// 处理图标加载失败
+const handleIconError = (tool) => {
+  const img = event.target
+  if (!img.dataset.tried) {
+    img.dataset.tried = 'true'
+    try {
+      const urlObj = new URL(tool.url)
+      // 尝试 Google 的服务
+      img.src = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`
+      img.onerror = () => {
+        // 如果 Google 服务失败，使用默认图标
+        img.src = '/default-icon.svg'
+      }
+    } catch (error) {
+      img.src = '/default-icon.svg'
+    }
+  }
 }
 
 const openTool = (url) => {
@@ -114,6 +128,7 @@ const openTool = (url) => {
   justify-content: center;
   align-items: center;
   height: 40px;
+  min-height: 40px;
 }
 
 .icon-image {
@@ -121,10 +136,13 @@ const openTool = (url) => {
   height: 32px;
   object-fit: contain;
   transition: transform 0.3s;
+  border-radius: 4px;
+  filter: grayscale(0.2);
 }
 
 .tool-card:hover .icon-image {
   transform: scale(1.1);
+  filter: grayscale(0);
 }
 
 h3 {
