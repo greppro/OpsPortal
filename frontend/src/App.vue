@@ -254,8 +254,8 @@ onMounted(() => {
 }
 
 .system-title {
-  height: 60px;
-  line-height: 60px;
+  height: 64px;
+  line-height: 64px;
   text-align: center;
   font-size: 18px;
   font-weight: bold;
