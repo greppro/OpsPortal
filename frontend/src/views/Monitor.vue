@@ -11,7 +11,7 @@
         >
           <el-option 
             v-for="proj in projects" 
-            :key="proj.id" 
+            :key="proj.name" 
             :label="proj.label" 
             :value="proj.name"
           />
@@ -19,11 +19,14 @@
       </div>
 
       <div class="tabs-header">
-        <el-tabs v-model="activeEnv" @tab-click="handleEnvChange">
-          <el-tab-pane label="所有环境" name="" />
+        <el-tabs 
+          v-model="activeEnv" 
+          @tab-change="handleEnvChange"
+          v-if="activeProject"
+        >
           <el-tab-pane 
             v-for="env in filteredEnvironments" 
-            :key="env.id" 
+            :key="env.name"
             :label="env.label" 
             :name="env.name"
           />
@@ -85,7 +88,7 @@ const fetchTools = async () => {
     let url = '/api/sites'
     const params = {}
     
-    if (activeEnv.value) {
+    if (activeProject.value && activeEnv.value) {
       params.env = activeEnv.value
     }
     if (activeProject.value) {
@@ -102,11 +105,8 @@ const fetchTools = async () => {
 
 // 处理项目变更
 const handleProjectChange = () => {
-  if (filteredEnvironments.value.length > 0) {
-    const currentEnvExists = filteredEnvironments.value.some(env => env.name === activeEnv.value)
-    if (!currentEnvExists) {
-      activeEnv.value = ''  // 重置为显示所有环境
-    }
+  if (!activeProject.value) {
+    activeEnv.value = ''
   }
   fetchTools()
 }
@@ -120,7 +120,7 @@ const handleEnvChange = (tab) => {
 onMounted(async () => {
   await fetchProjects()
   await fetchEnvironments()
-  fetchTools()  // 初始加载所有工具
+  fetchTools()
 })
 </script>
 
