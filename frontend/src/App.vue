@@ -2,7 +2,7 @@
   <Notice @notice-visible-change="handleNoticeVisibleChange" />
   <el-container class="layout-container" :class="{ 'no-notice': !showNoticeBar }">
     <el-aside width="200px" class="aside">
-      <div class="logo">OpsPortal运维导航</div>
+      <div class="system-title">OpsPortal运维导航</div>
       <el-menu
         :default-active="activeMenu"
         class="menu"
@@ -23,8 +23,17 @@
     </el-aside>
     
     <el-container class="main-container">
-      <el-header class="header" v-if="showUserInfo">
-        <div class="header-right">
+      <el-header class="header">
+        <div class="header-logo">
+          <img 
+            :src="logoUrl" 
+            alt="Logo" 
+            class="site-logo" 
+            v-if="logoUrl"
+            @error="handleLogoError"
+          >
+        </div>
+        <div class="header-right" v-if="showUserInfo">
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-icon><User /></el-icon>
@@ -45,16 +54,22 @@
       </el-main>
     </el-container>
     <ChangePasswordDialog ref="changePasswordDialogRef" />
+    <LogoUploadDialog 
+      ref="logoUploadDialogRef" 
+      @success="handleLogoSuccess"
+    />
   </el-container>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Monitor, Setting, User } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ChangePasswordDialog from './components/ChangePasswordDialog.vue'
 import Notice from './components/Notice.vue'
+import request from './utils/request'
+import LogoUploadDialog from './components/LogoUploadDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -67,6 +82,7 @@ const activeMenu = computed(() => route.path)
 const showUserInfo = computed(() => isLoggedIn.value && route.path === '/admin')
 
 const changePasswordDialogRef = ref(null)
+const logoUploadDialogRef = ref(null)
 
 const handleCommand = async (command) => {
   if (command === 'logout') {
@@ -103,6 +119,8 @@ const handleCommand = async (command) => {
     }
   } else if (command === 'changePassword') {
     changePasswordDialogRef.value?.show()
+  } else if (command === 'uploadLogo') {
+    logoUploadDialogRef.value?.show()
   }
 }
 
@@ -111,6 +129,55 @@ const showNoticeBar = ref(true)
 const handleNoticeVisibleChange = (visible) => {
   showNoticeBar.value = visible
 }
+
+const logoUrl = ref('')
+const isAdmin = computed(() => isLoggedIn.value)
+
+// 获取 Logo
+const fetchLogo = async () => {
+  try {
+    const res = await request.get('/api/logo')
+    logoUrl.value = res.data.url
+  } catch (error) {
+    console.error('Error fetching logo:', error)
+  }
+}
+
+// 上传相关
+const uploadHeaders = {
+  Authorization: `Bearer ${localStorage.getItem('token')}`
+}
+
+const handleLogoSuccess = (res) => {
+  logoUrl.value = res.url
+  ElMessage.success('Logo更新成功')
+}
+
+const beforeLogoUpload = (file) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB!')
+    return false
+  }
+  return true
+}
+
+const uploadUrl = `${import.meta.env.VITE_API_URL}/api/upload/logo`
+
+const handleLogoError = (e) => {
+  console.error('Logo image load failed:', e)
+  logoUrl.value = ''  // 如果图片加载失败，清空URL
+}
+
+onMounted(() => {
+  fetchLogo()
+})
 </script>
 
 <style scoped>
@@ -163,8 +230,30 @@ const handleNoticeVisibleChange = (visible) => {
   border-bottom: 1px solid #e6e6e6;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 0 20px;
+}
+
+.header-logo {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.site-logo {
+  max-height: 40px;
+  max-width: 200px;
+  object-fit: contain;
+}
+
+.system-title {
+  height: 60px;
+  line-height: 60px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  background-color: #2b2f3a;
 }
 
 .header-right {
@@ -206,5 +295,49 @@ const handleNoticeVisibleChange = (visible) => {
 
 .app-container {
   margin-top: 40px;
+}
+
+.logo-area {
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.site-logo {
+  max-width: 160px;
+  max-height: 60px;
+  margin-bottom: 10px;
+}
+
+.logo-placeholder {
+  font-size: 24px;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.logo-upload {
+  margin-top: 10px;
+}
+
+.logo-upload :deep(.el-upload) {
+  display: block;
+}
+
+.logo-upload :deep(.el-button) {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+}
+
+.logo-upload :deep(.el-button:hover) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.upload-dialog {
+  .el-upload {
+    width: 100%;
+    text-align: center;
+  }
 }
 </style>

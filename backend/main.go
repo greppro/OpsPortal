@@ -63,6 +63,9 @@ func main() {
 		// 公告相关的公开接口
 		public.GET("/api/notices/active", handlers.GetActiveNotice) // 获取当前激活的公告
 		public.GET("/api/notices", handlers.GetNotices)             // 获取公告列表
+
+		// Logo 相关的公开接口
+		public.GET("/api/logo", handlers.GetLogo)
 	}
 
 	// 需要认证的路由组
@@ -91,7 +94,14 @@ func main() {
 		auth.POST("/notices", handlers.CreateNotice)
 		auth.PUT("/notices/:id", handlers.UpdateNotice)
 		auth.DELETE("/notices/:id", handlers.DeleteNotice)
+
+		// 上传 Logo
+		auth.POST("/upload/logo", handlers.UploadLogo)
+		auth.DELETE("/logo", handlers.DeleteLogo)
 	}
+
+	// 添加静态文件服务
+	r.Static("/uploads", "./uploads")
 
 	r.Run(":8080")
 }

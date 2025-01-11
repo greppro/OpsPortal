@@ -17,9 +17,20 @@ func InitDB() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	// 自动迁移表结构
+	// 自动迁移数据库表
+	err = DB.AutoMigrate(
+		&models.Tool{},
+		&models.Project{},
+		&models.Environment{},
+		&models.Notice{},
+		&models.Logo{},
+	)
+	if err != nil {
+		log.Fatal("Failed to migrate database:", err)
+	}
+
+	// 自动迁移用户表
 	DB.AutoMigrate(&models.User{})
-	DB.AutoMigrate(&models.Tool{})
 
 	// 修改 Environment 模型的迁移
 	if err := DB.Migrator().DropTable(&models.Environment{}); err != nil {
