@@ -1,6 +1,6 @@
 <template>
   <Notice @notice-visible-change="handleNoticeVisibleChange" />
-  <el-container class="layout-container" :class="{ 'no-notice': !showNoticeBar }">
+  <el-container class="layout-container" :class="{ 'has-notice': showNoticeBar }">
     <el-aside width="200px" class="aside">
       <div class="system-title">OpsPortal运维导航</div>
       <el-menu
@@ -127,7 +127,9 @@ const handleCommand = async (command) => {
 const showNoticeBar = ref(true)
 
 const handleNoticeVisibleChange = (visible) => {
-  showNoticeBar.value = visible
+  if (!visible) {
+    showNoticeBar.value = visible
+  }
 }
 
 const logoUrl = ref('')
@@ -183,13 +185,13 @@ onMounted(() => {
 <style scoped>
 .layout-container {
   height: 100vh;
-  padding-top: 40px;
+  padding-top: 0;
   overflow: hidden;
   transition: padding-top 0.3s;
 }
 
-.layout-container.no-notice {
-  padding-top: 0;
+.layout-container.has-notice {
+  padding-top: 40px;
 }
 
 .aside {

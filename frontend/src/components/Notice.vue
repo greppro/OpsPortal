@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showNotice && notice.content" class="notice-bar">
+  <div v-if="showNotice && notice.content && notice.content.trim()" class="notice-bar">
     <div class="notice-content">
       <div class="scroll-wrapper" :class="{ 'scroll': shouldScroll, 'centered': !shouldScroll }">
         <span>{{ notice.content }}</span>
@@ -27,11 +27,18 @@ const getNotice = async () => {
   try {
     const res = await getActiveNotice()
     notice.value = res.data
-    if (notice.value.content) {
-      checkOverflow()
+    if (!res.data?.content?.trim()) {
+      showNotice.value = false
+      emit('notice-visible-change', false)
+    } else {
+      if (notice.value.content) {
+        checkOverflow()
+      }
     }
   } catch (error) {
     console.error('获取公告失败:', error)
+    showNotice.value = false
+    emit('notice-visible-change', false)
   }
 }
 
