@@ -2,7 +2,11 @@
   <div class="tool-grid">
     <el-row :gutter="20">
       <el-col :xs="12" :sm="8" :md="6" :lg="4" v-for="tool in tools" :key="tool.id">
-        <el-card class="tool-card" shadow="hover">
+        <el-card 
+          class="tool-card" 
+          shadow="hover" 
+          @click="openTool(tool.url)"
+        >
           <div class="content-wrapper">
             <div class="tool-icon">
               <img 
@@ -15,10 +19,9 @@
             <h3>{{ tool.name }}</h3>
             <p>{{ tool.description }}</p>
           </div>
-          <div class="tool-actions">
-            <el-button type="primary" size="small" @click="openTool(tool.url)">访问</el-button>
-            <el-button v-if="isManagement" type="warning" size="small" @click="$emit('edit', tool)">编辑</el-button>
-            <el-button v-if="isManagement" type="danger" size="small" @click="$emit('delete', tool.id)">删除</el-button>
+          <div v-if="isManagement" class="tool-actions">
+            <el-button type="warning" size="small" @click.stop="$emit('edit', tool)">编辑</el-button>
+            <el-button type="danger" size="small" @click.stop="$emit('delete', tool.id)">删除</el-button>
           </div>
         </el-card>
       </el-col>
@@ -70,12 +73,31 @@ const openTool = (url) => {
   margin-bottom: 20px;
   text-align: center;
   height: 180px;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 
 .tool-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+  transform: translateY(-6px);
+  box-shadow: 0 6px 16px rgba(0,0,0,.1);
+}
+
+.tool-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tool-card:active::after {
+  opacity: 1;
 }
 
 .content-wrapper {
@@ -83,6 +105,7 @@ const openTool = (url) => {
   display: flex;
   flex-direction: column;
   margin-bottom: 8px;
+  padding: 12px;
 }
 
 .tool-icon {
@@ -97,6 +120,11 @@ const openTool = (url) => {
   width: 32px;
   height: 32px;
   object-fit: contain;
+  transition: transform 0.3s;
+}
+
+.tool-card:hover .icon-image {
+  transform: scale(1.1);
 }
 
 h3 {
@@ -105,6 +133,12 @@ h3 {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #303133;
+  transition: color 0.3s;
+}
+
+.tool-card:hover h3 {
+  color: #409EFF;
 }
 
 p {
@@ -116,6 +150,7 @@ p {
   -webkit-line-clamp: 2;
   overflow: hidden;
   min-height: 38px;
+  line-height: 1.5;
 }
 
 .tool-actions {
@@ -125,6 +160,8 @@ p {
   display: flex;
   gap: 8px;
   justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .el-button--small {
