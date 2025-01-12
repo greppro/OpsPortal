@@ -1,10 +1,10 @@
 package main
 
 import (
+	"log"
 	"ops-portal/config"
 	"ops-portal/handlers"
 	"ops-portal/middleware"
-	"log"
 	"os"
 
 	_ "ops-portal/docs"

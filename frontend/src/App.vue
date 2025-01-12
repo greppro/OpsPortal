@@ -139,9 +139,11 @@ const isAdmin = computed(() => isLoggedIn.value)
 const fetchLogo = async () => {
   try {
     const res = await request.get('/api/logo')
-    logoUrl.value = res.data.url
+    // 直接使用返回的 URL，让浏览器基于当前域名解析相对路径
+    logoUrl.value = res.data.url || ''
   } catch (error) {
     console.error('Error fetching logo:', error)
+    logoUrl.value = ''
   }
 }
 

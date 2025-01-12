@@ -86,9 +86,10 @@ const uploadHeaders = {
 const fetchLogo = async () => {
   try {
     const res = await request.get('/api/logo')
-    currentLogo.value = res.data.url
+    currentLogo.value = res.data.url || ''
   } catch (error) {
     console.error('Error fetching logo:', error)
+    currentLogo.value = ''
   }
 }
 

@@ -19,7 +19,7 @@ const uploadDir = "uploads/logos"
 
 func init() {
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-			panic(err)
+		panic(err)
 	}
 }
 
@@ -117,4 +117,4 @@ func DeleteLogo(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Logo deleted successfully"})
-} 
+}
