@@ -2,19 +2,33 @@
   <div class="tools-container">
     <div class="tools-header">
       <div class="filter-header">
-        <el-select
-          v-model="activeProject"
-          placeholder="选择项目"
-          clearable
-          @change="handleProjectChange"
-        >
-          <el-option
-            v-for="project in projects"
-            :key="project.id"
-            :label="project.label"
-            :value="project.name"
-          />
-        </el-select>
+        <div class="filter-group">
+          <el-select
+            v-model="activeProject"
+            placeholder="选择项目"
+            clearable
+            @change="handleProjectChange"
+          >
+            <el-option
+              v-for="project in projects"
+              :key="project.id"
+              :label="project.label"
+              :value="project.name"
+            />
+          </el-select>
+
+          <el-input
+            v-model="searchQuery"
+            placeholder="搜索工具名称或描述"
+            clearable
+            @input="handleSearch"
+            class="search-input"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
       </div>
 
       <div class="tabs-header" v-if="activeProject">
@@ -30,14 +44,15 @@
     </div>
 
     <div class="tools-content">
-      <tool-grid :tools="tools" />
+      <tool-grid :tools="filteredTools" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import ToolGrid from '../components/ToolGrid.vue'
 import request from '../utils/request'
 
@@ -46,6 +61,20 @@ const environments = ref([])
 const tools = ref([])
 const activeProject = ref('')
 const activeEnv = ref('')
+const searchQuery = ref('')
+const allTools = ref([])
+
+const filteredTools = computed(() => {
+  if (!searchQuery.value) {
+    return tools.value
+  }
+  
+  const query = searchQuery.value.toLowerCase()
+  return tools.value.filter(tool => 
+    tool.name.toLowerCase().includes(query) || 
+    (tool.description && tool.description.toLowerCase().includes(query))
+  )
+})
 
 // 获取项目列表
 const fetchProjects = async () => {
@@ -83,7 +112,6 @@ const fetchTools = async () => {
       params.env = activeEnv.value
     }
 
-    console.log('Fetching tools with params:', params) // 添加调试日志
     const response = await request.get('/api/sites', { params })
     tools.value = response.data
   } catch (error) {
@@ -114,6 +142,12 @@ const handleEnvChange = (tabName) => {
   console.log('Environment changed to:', tabName) // 添加调试日志
   activeEnv.value = tabName
   fetchTools()
+}
+
+// 处理搜索
+const handleSearch = () => {
+  // 这里可以添加防抖逻辑如果需要
+  console.log('Searching for:', searchQuery.value)
 }
 
 onMounted(async () => {
@@ -166,5 +200,23 @@ onMounted(async () => {
 
 :deep(.el-select) {
   width: 200px;
+}
+
+.filter-group {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.search-input {
+  width: 240px;
+}
+
+:deep(.el-input__wrapper) {
+  background-color: #f5f7fa;
+}
+
+:deep(.el-input__prefix) {
+  color: #909399;
 }
 </style> 
