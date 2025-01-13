@@ -1,31 +1,34 @@
 <template>
   <div class="tool-grid">
-    <el-row :gutter="20">
-      <el-col :xs="12" :sm="8" :md="6" :lg="4" v-for="tool in tools" :key="tool.id">
-        <el-card 
-          class="tool-card" 
-          shadow="hover" 
-          @click="openTool(tool.url)"
+    <div class="grid-container">
+      <el-row :gutter="20">
+        <el-col 
+          v-for="tool in tools" 
+          :key="tool.id"
+          :span="4.8"
+          class="tool-col"
         >
-          <div class="content-wrapper">
-            <div class="tool-icon">
-              <img 
-                :src="getFavicon(tool.url)"
-                :alt="tool.name"
-                class="icon-image"
-                @error="handleIconError(tool)"
-              />
+          <div class="tool-card">
+            <div class="content-wrapper">
+              <div class="tool-header">
+                <img 
+                  :src="getFavicon(tool.url)"
+                  :alt="tool.name"
+                  class="tool-icon"
+                  @error="handleIconError(tool)"
+                />
+                <h3 class="tool-name">{{ tool.name }}</h3>
+              </div>
+              <p class="tool-description">{{ tool.description || '暂无描述' }}</p>
+              <div class="tool-tags">
+                <div class="tag-item tag-gray">{{ tool.project }}</div>
+                <div class="tag-item tag-green">{{ tool.environment }}</div>
+              </div>
             </div>
-            <h3>{{ tool.name }}</h3>
-            <p>{{ tool.description }}</p>
           </div>
-          <div v-if="isManagement" class="tool-actions">
-            <el-button type="warning" size="small" @click.stop="$emit('edit', tool)">编辑</el-button>
-            <el-button type="danger" size="small" @click.stop="$emit('delete', tool.id)">删除</el-button>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </el-col>
+      </el-row>
+    </div>
   </div>
 </template>
 
@@ -80,112 +83,160 @@ const openTool = (url) => {
 
 <style scoped>
 .tool-grid {
-  padding: 16px;
+  padding: 20px 40px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.grid-container {
+  max-width: 1720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.tool-col {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .tool-card {
-  margin-bottom: 20px;
-  text-align: center;
-  height: 180px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 308px;
+  height: 120px;
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s ease-in-out;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .tool-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 6px 16px rgba(0,0,0,.1);
-}
-
-.tool-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.tool-card:active::after {
-  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .content-wrapper {
-  flex: 1;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  padding: 16px;
+}
+
+.tool-header {
+  display: flex;
+  align-items: center;
   margin-bottom: 8px;
-  padding: 12px;
 }
 
 .tool-icon {
-  margin: 4px 0 8px 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 40px;
-  min-height: 40px;
-}
-
-.icon-image {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
   object-fit: contain;
-  transition: transform 0.3s;
   border-radius: 4px;
-  filter: grayscale(0.2);
 }
 
-.tool-card:hover .icon-image {
-  transform: scale(1.1);
-  filter: grayscale(0);
-}
-
-h3 {
-  margin: 0 0 6px 0;
-  font-size: 16px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #303133;
-  transition: color 0.3s;
-}
-
-.tool-card:hover h3 {
-  color: #409EFF;
-}
-
-p {
+.tool-name {
   margin: 0;
   font-size: 14px;
-  color: #666;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  font-weight: 500;
+  color: #333;
   overflow: hidden;
-  min-height: 38px;
-  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.tool-actions {
-  margin-top: 8px;
-  padding: 8px 0 4px;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  position: relative;
-  z-index: 1;
-}
-
-.el-button--small {
-  padding: 5px 12px;
+.tool-description {
+  margin: 0 0 6px 0;
   font-size: 12px;
-  height: 26px;
-  min-width: 54px;
+  color: #666;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  max-height: 36px;
+}
+
+.tool-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.tag-item {
+  display: inline-block;
+  padding: 0 8px;
+  height: 22px;
+  line-height: 22px;
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.tag-gray {
+  background-color: #f4f4f5;
+  color: #909399;
+}
+
+.tag-green {
+  background-color: #f0f9eb;
+  color: #67c23a;
+}
+
+/* 响应式布局 */
+@media screen and (max-width: 1920px) {
+  :deep(.el-col) {
+    width: 20% !important;
+  }
+}
+
+@media screen and (max-width: 1600px) {
+  .tool-grid {
+    padding: 20px 32px;
+  }
+  .grid-container {
+    max-width: 1520px;
+  }
+}
+
+@media screen and (max-width: 1400px) {
+  :deep(.el-col) {
+    width: 25% !important;
+  }
+  .tool-grid {
+    padding: 20px 24px;
+  }
+  .grid-container {
+    max-width: 1280px;
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  :deep(.el-col) {
+    width: 33.333% !important;
+  }
+  .tool-grid {
+    padding: 20px;
+  }
+  .grid-container {
+    max-width: 1080px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  :deep(.el-col) {
+    width: 50% !important;
+  }
+  .tool-grid {
+    padding: 16px;
+  }
+}
+
+:deep(.el-card__body) {
+  overflow: visible;
+  height: 100%;
 }
 </style>
