@@ -38,6 +38,7 @@
           :on-change="handleChange"
           :auto-upload="false"
           ref="uploadRef"
+          accept=".jpg,.jpeg,.png,.svg"
         >
           <img v-if="previewUrl" :src="previewUrl" class="preview">
           <div v-else class="upload-placeholder">
@@ -188,6 +189,24 @@ const handleDelete = async () => {
   }
 }
 
+const handleFileChange = (file) => {
+  // 验证文件类型
+  const validTypes = ['image/jpeg', 'image/png', 'image/svg+xml']
+  if (!validTypes.includes(file.raw.type)) {
+    ElMessage.error('只能上传 JPG/PNG/SVG 格式的图片文件！')
+    return
+  }
+
+  // 验证文件大小（例如：2MB）
+  const maxSize = 2 * 1024 * 1024
+  if (file.size > maxSize) {
+    ElMessage.error('文件大小不能超过 2MB！')
+    return
+  }
+
+  uploadFile(file.raw)
+}
+
 onMounted(() => {
   fetchLogo()
 })
@@ -285,5 +304,11 @@ onMounted(() => {
 .logo-actions {
   display: flex;
   gap: 12px;
+}
+
+.el-upload__tip {
+  color: #909399;
+  font-size: 12px;
+  margin-top: 8px;
 }
 </style> 
