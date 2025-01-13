@@ -23,6 +23,25 @@ const notice = ref({ content: '' })
 const showNotice = ref(true)
 const shouldScroll = ref(false)
 
+// 检查通知是否已被关闭
+const isNoticeClosed = (notice) => {
+  const closedNotices = JSON.parse(localStorage.getItem('closedNotices') || '{}')
+  // 检查ID和更新时间
+  return closedNotices[notice.ID] && 
+         closedNotices[notice.ID].updatedAt === notice.UpdatedAt &&
+         closedNotices[notice.ID].active === notice.Active
+}
+
+// 保存关闭状态
+const saveNoticeClosedState = (notice) => {
+  const closedNotices = JSON.parse(localStorage.getItem('closedNotices') || '{}')
+  closedNotices[notice.ID] = {
+    updatedAt: notice.UpdatedAt,
+    active: notice.Active
+  }
+  localStorage.setItem('closedNotices', JSON.stringify(closedNotices))
+}
+
 const getNotice = async () => {
   try {
     const res = await getActiveNotice()
@@ -31,7 +50,11 @@ const getNotice = async () => {
       showNotice.value = false
       emit('notice-visible-change', false)
     } else {
-      if (notice.value.content) {
+      // 检查通知是否已被关闭，同时考虑更新时间和激活状态
+      if (notice.value.ID && isNoticeClosed(notice.value)) {
+        showNotice.value = false
+        emit('notice-visible-change', false)
+      } else if (notice.value.content) {
         checkOverflow()
       }
     }
@@ -51,6 +74,9 @@ const checkOverflow = async () => {
 }
 
 const closeNotice = () => {
+  if (notice.value.ID) {
+    saveNoticeClosedState(notice.value)
+  }
   showNotice.value = false
   emit('notice-visible-change', false)
 }
