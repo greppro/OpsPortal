@@ -2,32 +2,27 @@
   <div class="tools-container">
     <div class="tools-header">
       <div class="filter-header">
-        <el-select 
-          v-model="activeProject" 
+        <el-select
+          v-model="activeProject"
           placeholder="选择项目"
           clearable
           @change="handleProjectChange"
-          style="width: 200px"
         >
-          <el-option 
-            v-for="proj in projects" 
-            :key="proj.name" 
-            :label="proj.label" 
-            :value="proj.name"
+          <el-option
+            v-for="project in projects"
+            :key="project.id"
+            :label="project.label"
+            :value="project.name"
           />
         </el-select>
       </div>
 
-      <div class="tabs-header">
-        <el-tabs 
-          v-model="activeEnv" 
-          @tab-change="handleEnvChange"
-          v-if="activeProject"
-        >
-          <el-tab-pane 
-            v-for="env in filteredEnvironments" 
-            :key="env.name"
-            :label="env.label" 
+      <div class="tabs-header" v-if="activeProject">
+        <el-tabs v-model="activeEnv" @tab-change="handleEnvChange">
+          <el-tab-pane
+            v-for="env in environments"
+            :key="env.id"
+            :label="env.label"
             :name="env.name"
           />
         </el-tabs>
@@ -41,30 +36,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import request from '../utils/request'
 import ToolGrid from '../components/ToolGrid.vue'
+import request from '../utils/request'
 
-const activeProject = ref('')
-const activeEnv = ref('')
-const tools = ref([])
 const projects = ref([])
 const environments = ref([])
-
-// 根据选中的项目过滤环境
-const filteredEnvironments = computed(() => {
-  if (!activeProject.value) {
-    return environments.value
-  }
-  return environments.value.filter(env => env.project === activeProject.value)
-})
+const tools = ref([])
+const activeProject = ref('')
+const activeEnv = ref('')
 
 // 获取项目列表
 const fetchProjects = async () => {
   try {
-    const res = await request.get('/api/projects')
-    projects.value = res.data
+    const response = await request.get('/api/projects')
+    projects.value = response.data
   } catch (error) {
     console.error('Error fetching projects:', error)
     ElMessage.error('获取项目列表失败')
@@ -74,8 +61,10 @@ const fetchProjects = async () => {
 // 获取环境列表
 const fetchEnvironments = async () => {
   try {
-    const res = await request.get('/api/environments')
-    environments.value = res.data
+    const response = await request.get('/api/environments', {
+      params: { project_id: getProjectId(activeProject.value) }
+    })
+    environments.value = response.data
   } catch (error) {
     console.error('Error fetching environments:', error)
     ElMessage.error('获取环境列表失败')
@@ -85,17 +74,17 @@ const fetchEnvironments = async () => {
 // 获取工具列表
 const fetchTools = async () => {
   try {
-    let url = '/api/sites'
     const params = {}
     
-    if (activeProject.value && activeEnv.value) {
-      params.env = activeEnv.value
-    }
     if (activeProject.value) {
       params.project = activeProject.value
     }
+    if (activeEnv.value) {
+      params.env = activeEnv.value
+    }
 
-    const response = await request.get(url, { params })
+    console.log('Fetching tools with params:', params) // 添加调试日志
+    const response = await request.get('/api/sites', { params })
     tools.value = response.data
   } catch (error) {
     console.error('Error fetching tools:', error)
@@ -103,23 +92,35 @@ const fetchTools = async () => {
   }
 }
 
+// 获取项目ID
+const getProjectId = (projectName) => {
+  const project = projects.value.find(p => p.name === projectName)
+  return project?.id || ''
+}
+
 // 处理项目变更
-const handleProjectChange = () => {
-  if (!activeProject.value) {
-    activeEnv.value = ''
+const handleProjectChange = async () => {
+  activeEnv.value = '' // 重置环境选择
+  if (activeProject.value) {
+    await fetchEnvironments() // 重新获取环境列表
+  } else {
+    environments.value = [] // 清空环境列表
   }
   fetchTools()
 }
 
 // 处理环境变更
-const handleEnvChange = (tab) => {
-  activeEnv.value = tab.paneName
+const handleEnvChange = (tabName) => {
+  console.log('Environment changed to:', tabName) // 添加调试日志
+  activeEnv.value = tabName
   fetchTools()
 }
 
 onMounted(async () => {
   await fetchProjects()
-  await fetchEnvironments()
+  if (activeProject.value) {
+    await fetchEnvironments()
+  }
   fetchTools()
 })
 </script>
