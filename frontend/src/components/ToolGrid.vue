@@ -109,6 +109,7 @@ const openTool = (url) => {
   border: 1px solid #ebeef5;
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
 }
 
 .tool-card:hover {
@@ -121,6 +122,7 @@ const openTool = (url) => {
   display: flex;
   flex-direction: column;
   padding: 16px;
+  box-sizing: border-box;
 }
 
 .tool-header {
@@ -148,7 +150,7 @@ const openTool = (url) => {
 }
 
 .tool-description {
-  margin: 0 0 6px 0;
+  margin: 0;
   font-size: 12px;
   color: #666;
   line-height: 1.5;
@@ -157,12 +159,20 @@ const openTool = (url) => {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  max-height: 36px;
+  min-height: 36px;
+  margin-bottom: 6px;
+}
+
+.tool-description:not(:-webkit-box-orient) {
+  min-height: 18px;
 }
 
 .tool-tags {
   display: flex;
   gap: 6px;
+  margin-top: auto;
+  padding-bottom: 2px;
+  flex-wrap: wrap;
 }
 
 .tag-item {
@@ -174,6 +184,9 @@ const openTool = (url) => {
   border-radius: 4px;
   white-space: nowrap;
   box-sizing: border-box;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tag-gray {
