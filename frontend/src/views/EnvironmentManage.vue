@@ -1,11 +1,17 @@
 <template>
   <div class="manage-container">
     <div class="filter-header">
-      <el-button type="primary" @click="handleAdd">添加环境</el-button>
+      <div class="left-actions">
+        <el-button type="primary" @click="handleAdd">
+          <el-icon><Plus /></el-icon>
+          添加环境
+        </el-button>
+      </div>
       <div class="filters">
+        <span class="filter-label">筛选项目：</span>
         <el-select 
           v-model="activeProject" 
-          placeholder="选择项目"
+          placeholder="全部项目"
           clearable
           @clear="handleProjectClear"
           style="width: 200px"
@@ -17,6 +23,12 @@
             :value="proj.id"
           />
         </el-select>
+        <el-tag v-if="activeProject" type="info" class="filter-count">
+          共 {{ filteredEnvironments.length }} 个环境
+        </el-tag>
+        <el-tag v-else type="info" class="filter-count">
+          共 {{ environmentList.length }} 个环境
+        </el-tag>
       </div>
     </div>
 
@@ -109,6 +121,7 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import request from '../utils/request'
 
 const environmentList = ref([])
@@ -295,9 +308,25 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
+.left-actions {
+  display: flex;
+  align-items: center;
+}
+
 .filters {
   display: flex;
-  gap: 20px;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-label {
+  font-size: 14px;
+  color: #606266;
+  white-space: nowrap;
+}
+
+.filter-count {
+  margin-left: 8px;
 }
 
 :deep(.el-input__wrapper) {

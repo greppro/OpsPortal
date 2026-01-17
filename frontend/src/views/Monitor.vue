@@ -113,7 +113,7 @@ const handleProjectChange = () => {
 
 // 处理环境变更
 const handleEnvChange = (tab) => {
-  activeEnv.value = tab.paneName
+  activeEnv.value = tab
   fetchTools()
 }
 
