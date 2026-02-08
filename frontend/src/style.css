@@ -1,11 +1,86 @@
+/* 全局主题变量 - 参考通义千问风格 */
+:root {
+  /* 主色 - 紫靛色 (Qwen Style) */
+  --primary: #615ced;
+  --primary-hover: #4f46e5;
+  --primary-light: #eef2ff;
+  
+  /* 背景色 - 极致干净 */
+  --bg-primary: #ffffff;      /* 卡片/主内容 */
+  --bg-secondary: #ffffff;    /* 页面背景 rgb(255, 255, 255) */
+  --bg-sidebar: #fcfcfd;      /* 侧边栏 rgb(252, 252, 253) */
+  --bg-sidebar-title: transparent; /* 标题透底 */
+  
+  /* 文字颜色 */
+  --text-primary: #111827;    /* 接近纯黑 */
+  --text-secondary: #6b7280;
+  --text-sidebar: #374151;
+  --text-sidebar-muted: #9ca3af;
+  
+  /* 边框颜色 */
+  --border-color: #e5e7eb;
+  --border-light: #f3f4f6;
+  
+  /* 阴影 - 柔和扩散 */
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+  /* 圆角 - 更大更圆润 */
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+/* 深色主题 - 沉浸黑 */
+:root[data-theme="dark"] {
+  --primary: #818cf8;
+  --primary-hover: #6366f1;
+  --primary-light: rgba(99, 102, 241, 0.15);
+  
+  --bg-primary: #1e1e1e;      /* 卡片 */
+  --bg-secondary: #222222;    /* 页面背景 rgb(34, 34, 34) */
+  --bg-sidebar: #111112;      /* 侧边栏 rgb(17, 17, 18) */
+  --bg-sidebar-title: transparent;
+  
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-sidebar: #e5e7eb;
+  --text-sidebar-muted: #6b7280;
+  
+  --border-color: #2e2e2e;
+  --border-light: #252525;
+  
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  /* Element Plus 深色覆盖 */
+  --el-bg-color: #1e1e1e;
+  --el-bg-color-overlay: #252525;
+  --el-text-color-primary: #f9fafb;
+  --el-text-color-regular: #9ca3af;
+  --el-border-color: #2e2e2e;
+  --el-border-color-light: #252525;
+  --el-fill-color-blank: #1e1e1e;
+}
+
+/* 强制覆盖 Element Plus 表格背景 */
+html.dark .el-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: #252525;
+  background-color: transparent;
+}
+html.dark .el-table tr {
+  background-color: transparent;
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: var(--text-primary, #1e293b);
+  background-color: var(--bg-secondary, #f5f6f8);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -24,10 +99,9 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  height: 100vh;
 }
 
 h1 {
@@ -36,7 +110,7 @@ h1 {
 }
 
 button {
-  border-radius: 8px;
+  border-radius: var(--radius-md, 8px);
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
@@ -56,17 +130,28 @@ button:focus-visible {
 
 .card {
   padding: 2em;
+  border-radius: var(--radius-lg, 16px);
 }
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
 }
 
+/* Element Plus 主色与全局一致 */
+.el-button--primary,
+.el-tag--primary {
+  --el-button-bg-color: var(--primary);
+  --el-button-border-color: var(--primary);
+  --el-button-hover-bg-color: var(--primary-hover);
+  --el-button-hover-border-color: var(--primary-hover);
+}
+.el-link.el-link--primary { --el-link-text-color: var(--primary); --el-link-hover-text-color: var(--primary-hover); }
+
+/* 仅在没有显式设置 data-theme 时跟随系统偏好，避免覆盖用户选择的夜间模式 */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme]) {
     color: #213547;
     background-color: #ffffff;
   }
