@@ -31,7 +31,7 @@ RUN go build -o main
 FROM alpine:latest
 
 # 安装运行时依赖
-RUN apk add --no-cache sqlite-libs ca-certificates tzdata
+RUN apk add --no-cache sqlite-libs ca-certificates tzdata curl
 
 # 设置时区
 ENV TZ=Asia/Shanghai
@@ -45,14 +45,10 @@ RUN mkdir -p /app/data && \
     chown -R appuser:appgroup /app
 
 # 复制编译好的程序
-COPY --from=builder /app/main .
+COPY --from=builder --chown=appuser:appgroup /app/main .
 
 # 如果有配置文件，也需要复制
 # COPY --from=builder /app/config ./config
-
-# 设置数据卷并确保权限
-VOLUME ["/app/data"]
-RUN chown -R appuser:appgroup /app/data
 
 # 切换到非 root 用户
 USER appuser

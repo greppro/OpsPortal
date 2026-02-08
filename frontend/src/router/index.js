@@ -1,22 +1,32 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import MainLayout from '../layout/MainLayout.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      redirect: '/monitor'
-    },
-    {
-      path: '/monitor',
-      name: 'monitor',
-      component: () => import('../views/Monitor.vue')
-    },
-    {
-      path: '/admin',
-      name: 'admin',
-      component: () => import('../views/Admin.vue'),
-      meta: { requiresAuth: true }
+      component: MainLayout,
+      redirect: '/monitor',
+      children: [
+        {
+          path: 'monitor',
+          name: 'monitor',
+          component: () => import('../views/Monitor.vue')
+        },
+        {
+          path: 'favorites',
+          name: 'favorites',
+          component: () => import('../views/Favorites.vue')
+        },
+        {
+          path: 'admin',
+          name: 'admin',
+          component: () => import('../views/Admin.vue'),
+          meta: { requiresAuth: true }
+        }
+      ]
     },
     {
       path: '/login',

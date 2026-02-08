@@ -10,6 +10,7 @@ frontend/pnpm-debug.log*
 
 # 后端
 backend/data/*.db
+backend/uploads/
 backend/tmp
 backend/*.exe
 backend/*.exe~
@@ -17,7 +18,11 @@ backend/*.dll
 backend/*.so
 backend/*.dylib
 
-# 编辑器文件
+# 数据与运行时
+data/
+
+# 编辑器与 IDE
+.cursor/
 .idea
 .vscode
 *.suo
@@ -25,5 +30,4 @@ backend/*.dylib
 *.njsproj
 *.sln
 *.sw? 
-node_modules
 node_modules

@@ -6,13 +6,21 @@ OpsPortal 是一个专为运维团队设计的综合导航平台，旨在简化�
 
 - 工具导航：快速访问各种运维工具
 - 环境区分：支持开发环境和生产环境的分类管理
-- 用户认证：基于用户权限的访问控制
+- 用户认证：基于 JWT 的访问控制
 - 工具管理：添加、编辑、删除工具条目
+- 分类管理：工具分类的创建与维护
+- 收藏：收藏常用工具快速访问
+- 主题切换：浅色/深色主题
+- 公告管理：系统公告的发布与展示
+- Logo 管理：工具 Logo 上传与展示
+- 项目管理：多项目与环境管理
+- 设置管理：系统配置管理
 
 ## 技术栈
 
 ### 前端
 - Vue 3
+- Vite
 - Element Plus
 - Vue Router
 - Axios
@@ -25,10 +33,29 @@ OpsPortal 是一个专为运维团队设计的综合导航平台，旨在简化�
 
 ## 快速开始
 
-### 使用 Docker 构建和运行
+### 使用 Docker Compose 运行（推荐）
+
+```bash
+# 启动所有服务
+docker-compose up -d
+
+# 查看服务状态
+docker-compose ps
+
+# 查看服务日志
+docker-compose logs -f
+
+# 停止所有服务
+docker-compose down
+```
+
+生产环境可使用 `docker-compose.prod.yml` 进行部署。
+
+### 使用 Docker 单独构建和运行
 
 1. 构建镜像
 
+```bash
 # 构建前端镜像
 cd frontend
 docker build -t ops-portal-frontend:latest .
@@ -36,9 +63,11 @@ docker build -t ops-portal-frontend:latest .
 # 构建后端镜像
 cd ../backend
 docker build -t ops-portal-backend:latest .
+```
 
 2. 运行容器
 
+```bash
 # 创建网络
 docker network create ops-portal-network
 
@@ -54,41 +83,38 @@ docker run -d \
 docker run -d \
   --name ops-portal-frontend \
   --network ops-portal-network \
-  -p 3000:80 \
+  -p 80:80 \
   ops-portal-frontend:latest
-
-### 使用 Docker Compose 运行
-
-# 启动所有服务
-docker-compose up -d
-
-# 查看服务状态
-docker-compose ps
-
-# 查看服务日志
-docker-compose logs -f
-
-# 停止所有服务
-docker-compose down
+```
 
 ### 本地开发
 
 1. 前端开发
 
+```bash
 cd frontend
 npm install
 npm run dev
+```
 
 2. 后端开发
 
+```bash
 cd backend
 go mod download
 go run main.go
+```
 
 ## 访问地址
 
-- 前端页面：http://localhost:3000
+### Docker Compose 部署
+- 前端页面：http://localhost:80（前端容器映射 80 端口）
+- 后端 API：通过前端 Nginx 反向代理访问，或需在 `docker-compose.yml` 中为 backend 暴露端口 8080 后访问 http://localhost:8080
+
+### 本地开发
+- 前端页面：http://localhost:5173（Vite 默认端口）
 - 后端 API：http://localhost:8080
+- Swagger 文档：http://localhost:8080/swagger/index.html
 
 ## 默认账号
 
@@ -97,36 +123,56 @@ go run main.go
 
 ## 目录结构
 
-ops-portal/
-├── frontend/          # 前端项目
-│   ├── src/          # 源代码
+```
+OpsPortal/
+├── frontend/              # 前端项目
+│   ├── src/
+│   │   ├── api/           # API 封装
 │   │   ├── components/   # 组件
-│   │   ├── views/       # 页面
-│   │   └── router/      # 路由
-│   ├── Dockerfile    # 前端 Docker 构建文件
-│   └── nginx.conf    # Nginx 配置
-├── backend/          # 后端项目
-│   ├── config/       # 配置
-│   ├── handlers/     # 请求处理
-│   ├── models/       # 数据模型
-│   ├── data/         # 数据存储
-│   └── Dockerfile    # 后端 Docker 构建文件
-├── docker-compose.yml # Docker Compose 配置
+│   │   ├── composables/  # 组合式函数
+│   │   ├── config/       # 前端配置
+│   │   ├── layout/       # 布局
+│   │   ├── router/       # 路由
+│   │   ├── utils/        # 工具
+│   │   └── views/        # 页面
+│   ├── public/
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   └── vite.config.js
+├── backend/               # 后端项目
+│   ├── config/           # 配置
+│   ├── docs/             # Swagger 生成文档
+│   ├── handlers/         # 请求处理
+│   ├── middleware/       # 中间件
+│   ├── models/           # 数据模型
+│   ├── utils/            # 工具（如 JWT）
+│   ├── uploads/          # 上传文件（运行时，不提交）
+│   ├── Dockerfile
+│   ├── API.md
+│   └── tests.md
+├── data/                  # 数据存储（运行时，不提交）
+├── docker-compose.yml
+├── docker-compose.prod.yml
 └── README.md
+```
 
 ## API 文档
 
-### 认证相关
+完整 API 以 Swagger 为准：启动后端后访问 **http://localhost:8080/swagger/index.html**。
 
+### 简要索引
+
+**认证相关**
 - 登录：POST /api/auth/login
 - 修改密码：POST /api/auth/change-password
 
-### 工具管理
-
+**工具管理**
 - 获取工具列表：GET /api/tools?environment=dev|prod
 - 创建工具：POST /api/tools
 - 更新工具：PUT /api/tools/:id
 - 删除工具：DELETE /api/tools/:id
+
+（更多接口见 Swagger 文档。）
 
 ## 注意事项
 
@@ -134,15 +180,14 @@ ops-portal/
 2. 请及时修改默认用户密码
 3. 生产环境部署时建议：
    - 使用更安全的数据库（如 MySQL、PostgreSQL）
-   - 实现完整的用户认证和授权机制
    - 配置 HTTPS
    - 添加数据备份机制
 
 ## 开发计划
 
+- [x] 实现基于 JWT 的认证
+- [x] 添加工具分类管理
 - [ ] 添加用户管理功能
-- [ ] 实现基于 JWT 的认证
-- [ ] 添加工具分类管理
 - [ ] 支持更多环境类型
 - [ ] 添加操作日志
 - [ ] 实现数据导入导出
@@ -162,15 +207,3 @@ MIT License
 ## 联系方式
 
 如有问题或建议，请提交 Issue 或 Pull Request。
-
-## 开发环境
-
-- 前端开发服务器：http://localhost:3000
-- 后端 API 服务器：http://localhost:8080
-- Swagger 文档：http://localhost:8080/swagger/index.html
-
-## 生产环境
-
-- 前端应用：http://your-domain
-- 后端 API：http://your-domain/api
-- Swagger 文档：http://your-domain/swagger/index.html

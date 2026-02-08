@@ -27,7 +27,12 @@ const getNotice = async () => {
   try {
     const res = await getActiveNotice()
     notice.value = res.data
-    if (!res.data?.content?.trim()) {
+    
+    // 检查是否已手动关闭过该版本
+    const closedKey = `ops_notice_closed_${notice.value.ID}`
+    const closedTime = localStorage.getItem(closedKey)
+    
+    if (!res.data?.content?.trim() || closedTime === notice.value.UpdatedAt) {
       showNotice.value = false
       emit('notice-visible-change', false)
     } else {
@@ -51,6 +56,10 @@ const checkOverflow = async () => {
 }
 
 const closeNotice = () => {
+  if (notice.value.ID) {
+    const closedKey = `ops_notice_closed_${notice.value.ID}`
+    localStorage.setItem(closedKey, notice.value.UpdatedAt)
+  }
   showNotice.value = false
   emit('notice-visible-change', false)
 }
@@ -93,7 +102,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   height: 40px;
-  background: linear-gradient(to right, rgb(147, 38, 185), rgb(218, 117, 185));
+  background: linear-gradient(to right, var(--primary, #0ea5e9), #38bdf8);
   display: flex;
   align-items: center;
   justify-content: center;

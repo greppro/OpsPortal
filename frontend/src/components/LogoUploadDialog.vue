@@ -101,7 +101,7 @@ defineExpose({ show })
 
 .upload-tip {
   font-size: 12px;
-  color: #606266;
+  color: var(--text-secondary, #64748b);
   margin-top: 10px;
   text-align: center;
 }

@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"ops-portal/config"
 	"ops-portal/models"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,6 +36,25 @@ func GetTools(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取工具列表失败"})
 		return
 	}
+
+	// #region agent log
+	if len(tools) > 0 {
+		sample := make([]map[string]interface{}, 0, 3)
+		for i := 0; i < len(tools) && i < 3; i++ {
+			t := tools[i]
+			sample = append(sample, map[string]interface{}{"id": t.ID, "name": t.Name, "url": t.URL, "hasUrl": t.URL != ""})
+		}
+		line, _ := json.Marshal(map[string]interface{}{
+			"location": "tool.go:GetTools", "message": "tools response sample", "data": map[string]interface{}{"count": len(tools), "sample": sample},
+			"timestamp": time.Now().UnixMilli(), "hypothesisId": "H2,H4",
+		})
+		logPath := filepath.Join("..", ".cursor", "debug.log")
+		if f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
+			f.Write(append(line, '\n'))
+			f.Close()
+		}
+	}
+	// #endregion
 
 	c.JSON(http.StatusOK, tools)
 }

@@ -24,6 +24,8 @@ func InitDB() {
 		&models.Environment{},
 		&models.Notice{},
 		&models.Logo{},
+		&models.SystemConfig{},
+		&models.Category{},
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
@@ -59,12 +61,22 @@ func InitDB() {
 	DB.Model(&models.Project{}).Count(&projCount)
 	if projCount == 0 {
 		defaultProjects := []models.Project{
-			{Name: "cloud", Label: "云平台"},
+			{Name: "cloud", Label: "云平台", IsDefault: true},
 			{Name: "monitor", Label: "监控平台"},
 			{Name: "devops", Label: "DevOps工具"},
 		}
 		for _, proj := range defaultProjects {
 			DB.Create(&proj)
+		}
+	}
+
+	// 确保至少有一个项目为默认（兼容旧库或手动清空默认的情况）
+	var defaultCount int64
+	DB.Model(&models.Project{}).Where("is_default = ?", true).Count(&defaultCount)
+	if defaultCount == 0 {
+		var first models.Project
+		if DB.First(&first).Error == nil {
+			DB.Model(&first).Update("is_default", true)
 		}
 	}
 
@@ -200,5 +212,12 @@ func InitDB() {
 	err = DB.AutoMigrate(&models.Notice{})
 	if err != nil {
 		log.Fatal("Failed to migrate Notice model:", err)
+	}
+
+	// 确保默认分类「其它」存在
+	var otherCount int64
+	DB.Model(&models.Category{}).Where("name = ?", "其它").Count(&otherCount)
+	if otherCount == 0 {
+		DB.Create(&models.Category{Name: "其它", Description: "未归类的工具"})
 	}
 }

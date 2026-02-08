@@ -9,6 +9,11 @@
     <el-table :data="projectList" style="width: 100%" v-loading="loading">
       <el-table-column prop="name" label="项目标识" />
       <el-table-column prop="label" label="项目名称" />
+      <el-table-column label="默认项目" width="100" align="center">
+        <template #default="{ row }">
+          <el-tag v-if="row.is_default" type="success" size="small">默认</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="200">
         <template #default="{ row }">
           <el-button size="small" type="primary" @click="handleEdit(row)">编辑</el-button>
@@ -42,6 +47,9 @@
             placeholder="如：项目一、项目二"
           />
         </el-form-item>
+        <el-form-item label="设为默认">
+          <el-switch v-model="form.is_default" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -67,7 +75,8 @@ const formRef = ref(null)
 
 const form = ref({
   name: '',
-  label: ''
+  label: '',
+  is_default: false
 })
 
 const rules = {
@@ -147,7 +156,8 @@ const resetForm = () => {
   }
   form.value = {
     name: '',
-    label: ''
+    label: '',
+    is_default: false
   }
 }
 

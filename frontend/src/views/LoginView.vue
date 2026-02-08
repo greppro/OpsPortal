@@ -71,7 +71,7 @@ const handleLogin = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f5f7fa;
+  background-color: var(--bg-secondary, #f5f6f8);
 }
 
 .login-card {

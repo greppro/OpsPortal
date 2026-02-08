@@ -321,7 +321,7 @@ onMounted(() => {
 
 .filter-label {
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary, #64748b);
   white-space: nowrap;
 }
 
@@ -330,7 +330,7 @@ onMounted(() => {
 }
 
 :deep(.el-input__wrapper) {
-  background-color: #f5f7fa;
+  background-color: var(--bg-secondary, #f5f6f8);
   border: 1px solid #dcdfe6;
   box-shadow: none !important;
 }

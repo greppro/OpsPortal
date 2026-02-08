@@ -31,6 +31,11 @@ func CreateProject(c *gin.Context) {
 		return
 	}
 
+	// 如果设置为默认项目，取消其他默认项目
+	if project.IsDefault {
+		config.DB.Model(&models.Project{}).Where("is_default = ?", true).Update("is_default", false)
+	}
+
 	if err := config.DB.Create(&project).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建项目失败"})
 		return
@@ -49,10 +54,20 @@ func UpdateProject(c *gin.Context) {
 		return
 	}
 
-	if err := c.ShouldBindJSON(&project); err != nil {
+	var req models.Project
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// 如果设置为默认项目，取消其他默认项目
+	if req.IsDefault {
+		config.DB.Model(&models.Project{}).Where("id != ?", id).Update("is_default", false)
+	}
+
+	project.Name = req.Name
+	project.Label = req.Label
+	project.IsDefault = req.IsDefault
 
 	if err := config.DB.Save(&project).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新项目失败"})

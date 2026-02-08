@@ -1,66 +1,90 @@
 <template>
   <div class="tools-container">
-    <div class="tools-header">
-      <div class="filter-header">
-        <el-select 
-          v-model="activeProject" 
-          placeholder="选择项目"
-          clearable
-          @change="handleProjectChange"
-          style="width: 200px"
-        >
-          <el-option 
-            v-for="proj in projects" 
-            :key="proj.name" 
-            :label="proj.label" 
-            :value="proj.name"
-          />
-        </el-select>
-      </div>
-
-      <div class="tabs-header">
-        <el-tabs 
-          v-model="activeEnv" 
-          @tab-change="handleEnvChange"
-          v-if="activeProject"
-        >
-          <el-tab-pane 
-            v-for="env in filteredEnvironments" 
-            :key="env.name"
-            :label="env.label" 
-            :name="env.name"
-          />
-        </el-tabs>
-      </div>
-    </div>
-
     <div class="tools-content">
-      <tool-grid :tools="tools" />
+      <tool-grid :tools="filteredTools" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '../utils/request'
 import ToolGrid from '../components/ToolGrid.vue'
+import { getEnvLabel } from '../config/environment'
 
-const activeProject = ref('')
-const activeEnv = ref('')
+const props = defineProps({
+  activeProject: {
+    type: String,
+    default: ''
+  },
+  activeCategory: {
+    type: String,
+    default: 'all'
+  }
+})
+
 const tools = ref([])
 const projects = ref([])
 const environments = ref([])
 
-// 根据选中的项目过滤环境
-const filteredEnvironments = computed(() => {
-  if (!activeProject.value) {
-    return environments.value
-  }
-  return environments.value.filter(env => env.project === activeProject.value)
+const currentProject = computed(() => props.activeProject)
+const currentCategory = computed(() => props.activeCategory)
+
+// 当前项目下的环境列表（用于取 label）
+const projectEnvironments = computed(() => {
+  if (!currentProject.value) return []
+  return environments.value.filter(env => env.project === currentProject.value)
 })
 
-// 获取项目列表
+function getEnvLabelFor(environment) {
+  const env = projectEnvironments.value.find(e => e.name === environment)
+  return env ? env.label : getEnvLabel(environment)
+}
+
+// 按 (project, name) 分组，得到逻辑工具列表（同一工具任一条有分类即采用，避免被空分类覆盖）
+const groupedTools = computed(() => {
+  const list = tools.value
+  const map = new Map()
+  for (const t of list) {
+    const key = `${t.project}_${t.name}`
+    const cat = (t.category != null && t.category !== undefined) ? String(t.category).trim() : ''
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        name: t.name,
+        description: t.description || '',
+        category: cat,
+        project: t.project,
+        envs: []
+      })
+    }
+    const g = map.get(key)
+    if (cat && !(g.category || '').trim()) g.category = cat
+    g.envs.push({
+      id: t.id,
+      environment: t.environment,
+      url: t.url,
+      label: getEnvLabelFor(t.environment)
+    })
+  }
+  return Array.from(map.values())
+})
+
+// 按分类筛选后的分组列表（比较时 trim，避免空格导致不匹配）
+const filteredTools = computed(() => {
+  let result = groupedTools.value
+  const cat = (currentCategory.value || '').trim()
+  if (cat && cat !== 'all') {
+    result = result.filter(g => (g.category || '').trim() === cat)
+    // #region agent log
+    const groupCats = groupedTools.value.map(g => ({ name: g.name, category: g.category, match: (g.category || '').trim() === cat }))
+    fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Monitor.vue:filteredTools',message:'category filter',data:{activeCategory:cat,filteredCount:result.length,totalGroups:groupedTools.value.length,sampleGroupCategories:groupCats.slice(0,20),runId:'post-fix'},timestamp:Date.now(),hypothesisId:'H2,H3,H4'})}).catch(()=>{});
+    // #endregion
+  }
+  return result
+})
+
 const fetchProjects = async () => {
   try {
     const res = await request.get('/api/projects')
@@ -71,7 +95,6 @@ const fetchProjects = async () => {
   }
 }
 
-// 获取环境列表
 const fetchEnvironments = async () => {
   try {
     const res = await request.get('/api/environments')
@@ -82,40 +105,33 @@ const fetchEnvironments = async () => {
   }
 }
 
-// 获取工具列表
+let fetchToolsId = 0
 const fetchTools = async () => {
+  const thisId = ++fetchToolsId
   try {
-    let url = '/api/sites'
     const params = {}
-    
-    if (activeProject.value && activeEnv.value) {
-      params.env = activeEnv.value
+    if (currentProject.value) {
+      params.project = currentProject.value
     }
-    if (activeProject.value) {
-      params.project = activeProject.value
-    }
-
-    const response = await request.get(url, { params })
-    tools.value = response.data
+    const response = await request.get('/api/sites', { params })
+    if (thisId !== fetchToolsId) return
+    const raw = response.data ?? []
+    tools.value = raw
+    // #region agent log
+    const sample = raw.slice(0, 15).map(t => ({ name: t.name, category: t.category, hasCategory: 'category' in t, url: t.url, hasUrl: !!t.url }))
+    const uniq = [...new Set(raw.map(t => (t && t.category != null ? String(t.category).trim() : '')))].filter(Boolean)
+    fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Monitor.vue:fetchTools',message:'sites loaded',data:{toolsLength:raw.length,sample,uniqueCategoriesFromApi:uniq},timestamp:Date.now(),hypothesisId:'H1,H2,H5'})}).catch(()=>{});
+    // #endregion
   } catch (error) {
+    if (thisId !== fetchToolsId) return
     console.error('Error fetching tools:', error)
     ElMessage.error('获取工具列表失败')
   }
 }
 
-// 处理项目变更
-const handleProjectChange = () => {
-  if (!activeProject.value) {
-    activeEnv.value = ''
-  }
+watch(() => props.activeProject, () => {
   fetchTools()
-}
-
-// 处理环境变更
-const handleEnvChange = (tab) => {
-  activeEnv.value = tab
-  fetchTools()
-}
+})
 
 onMounted(async () => {
   await fetchProjects()
@@ -126,44 +142,17 @@ onMounted(async () => {
 
 <style scoped>
 .tools-container {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   padding: 20px;
   display: flex;
   flex-direction: column;
-}
-
-.tools-header {
-  flex-shrink: 0;
-}
-
-.filter-header {
-  margin-bottom: 20px;
-}
-
-.tabs-header {
-  margin-bottom: 20px;
+  background-color: var(--bg-secondary, #f5f6f8);
 }
 
 .tools-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
-
-:deep(.el-tabs__header) {
-  margin-bottom: 0;
-}
-
-:deep(.el-tabs__nav-wrap) {
-  padding: 0;
-}
-
-:deep(.el-tabs__item) {
-  font-size: 14px;
-  height: 40px;
-  line-height: 40px;
-}
-
-:deep(.el-select) {
-  width: 200px;
-}
-</style> 
+</style>

@@ -73,6 +73,14 @@ func main() {
 	// 公开路由组
 	public := r.Group("")
 	{
+		// 健康检查接口
+		public.GET("/api/health", func(c *gin.Context) {
+			c.JSON(200, gin.H{
+				"status": "ok",
+				"message": "OpsPortal backend is running",
+			})
+		})
+
 		// 认证相关
 		public.POST("/api/auth/login", handlers.Login)
 
@@ -87,6 +95,12 @@ func main() {
 
 		// Logo 相关的公开接口
 		public.GET("/api/logo", handlers.GetLogo)
+
+		// 系统配置（站点标题）
+		public.GET("/api/config/site-title", handlers.GetSiteTitle)
+
+		// 分类列表（公开，供首页侧边栏与分类管理页使用）
+		public.GET("/api/categories", handlers.GetCategories)
 	}
 
 	// 需要认证的路由组
@@ -119,6 +133,14 @@ func main() {
 		// 上传 Logo
 		auth.POST("/upload/logo", handlers.UploadLogo)
 		auth.DELETE("/logo", handlers.DeleteLogo)
+
+		// 系统配置（站点标题）
+		auth.PUT("/config/site-title", handlers.PutSiteTitle)
+
+		// 分类管理
+		auth.POST("/categories", handlers.CreateCategory)
+		auth.PUT("/categories/:id", handlers.UpdateCategory)
+		auth.DELETE("/categories/:id", handlers.DeleteCategory)
 	}
 
 	// 添加静态文件服务

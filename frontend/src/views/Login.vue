@@ -128,7 +128,7 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f5f7fa;
+  background-color: var(--bg-secondary, #f5f6f8);
   position: relative;
   overflow: hidden;
 }
@@ -140,7 +140,7 @@ const handleSubmit = async () => {
   right: 0;
   bottom: 0;
   opacity: 0.4;
-  background-color: #f5f7fa;
+  background-color: var(--bg-secondary, #f5f6f8);
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   background-size: 60px 60px;
   animation: moveBackground 60s linear infinite;
@@ -151,27 +151,28 @@ const handleSubmit = async () => {
   margin: 0;
   position: relative;
   z-index: 1;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--shadow-medium, 0 8px 24px rgba(0, 0, 0, 0.08));
+  background-color: var(--bg-primary);
   backdrop-filter: blur(10px);
-  border: none;
+  border: 1px solid var(--border-color);
 }
 
 .login-title {
   margin: 0;
   text-align: center;
   font-size: 20px;
-  color: #303133;
+  color: var(--text-primary);
 }
 
 :deep(.el-card__header) {
   padding: 20px;
-  border-bottom: 1px solid #ebeef5;
-  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
 }
 
 :deep(.el-card__body) {
   padding: 30px;
+  background-color: var(--bg-primary);
 }
 
 :deep(.el-form-item:last-child) {
@@ -179,16 +180,21 @@ const handleSubmit = async () => {
 }
 
 :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #dcdfe6 inset;
-  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px var(--border-color) inset;
+  background-color: var(--bg-primary);
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #c0c4cc inset;
+  box-shadow: 0 0 0 1px var(--text-secondary) inset;
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #409eff inset;
+  box-shadow: 0 0 0 1px var(--primary) inset;
+}
+
+:deep(.el-input__inner),
+:deep(.el-input__inner::placeholder) {
+  color: var(--text-primary);
 }
 
 @keyframes moveBackground {
@@ -200,15 +206,15 @@ const handleSubmit = async () => {
   }
 }
 
-/* 添加一些渐变光效 */
+/* 添加一些渐变光效（随主题变化） */
 .login-container::before {
-  position: absolute; /* 改回 absolute */
+  position: absolute;
   content: '';
   top: -50%;
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+  background: radial-gradient(circle, var(--primary-light) 0%, transparent 70%);
   animation: rotate 30s linear infinite;
 }
 
@@ -222,19 +228,19 @@ const handleSubmit = async () => {
 }
 
 .brand-title {
-  position: absolute; /* 改回 absolute */
+  position: absolute;
   top: 10%;
   left: 50%;
   transform: translateX(-50%);
   font-size: 48px;
   font-weight: 200;
-  color: rgba(64, 158, 255, 0.15);
+  color: var(--text-secondary);
+  opacity: 0.4;
   letter-spacing: 4px;
   text-transform: uppercase;
   pointer-events: none;
   font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
   z-index: 1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   animation: fadeIn 1.5s ease-out;
 }
 

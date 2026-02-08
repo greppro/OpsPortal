@@ -211,7 +211,7 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #f5f7fa;
+  background: var(--bg-secondary, #f5f6f8);
 }
 
 .logo-preview img {
@@ -272,7 +272,7 @@ onMounted(() => {
 
 .upload-tip {
   font-size: 12px;
-  color: #606266;
+  color: var(--text-secondary, #64748b);
   margin-top: 10px;
 }
 

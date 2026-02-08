@@ -22,16 +22,22 @@
             </div>
             <h3>{{ tool.name }}</h3>
             <p>{{ tool.description }}</p>
-            <div class="env-tags">
-              <el-tag
-                v-for="env in tool.envs"
-                :key="env.id"
-                size="small"
-                class="env-tag"
-                @click.stop="openTool(env.url)"
-              >
-                {{ env.label }}
-              </el-tag>
+            <div
+              class="env-tags"
+              :class="'env-tags--count-' + Math.min((tool.envs || []).length, 4)"
+            >
+              <template v-for="env in tool.envs" :key="env.id">
+                <a
+                  v-if="getEnvHref(env) !== '#'"
+                  :href="getEnvHref(env)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="env-tag"
+                >
+                  {{ env.environment ?? env.label }}
+                </a>
+                <span v-else class="env-tag env-tag--disabled">{{ env.environment ?? env.label }}</span>
+              </template>
             </div>
           </div>
           <div v-if="isManagement" class="tool-actions">
@@ -113,8 +119,13 @@ function handleIconError(tool) {
   }
 }
 
-function openTool(url) {
-  if (url) window.open(url, '_blank')
+function getEnvHref(env) {
+  const u = env?.url
+  if (!u || typeof u !== 'string') return '#'
+  let t = u.trim()
+  if (!t) return '#'
+  if (/^https?\/+/i.test(t)) t = t.replace(/^https?\/+:?/i, 'https://')
+  return /^https?:\/\//i.test(t) ? t : `https://${t}`
 }
 </script>
 
@@ -126,7 +137,10 @@ function openTool(url) {
 .tool-card {
   margin-bottom: 24px;
   text-align: center;
-  min-height: 200px;
+  height: 248px;
+  min-height: 248px;
+  display: flex;
+  flex-direction: column;
   transition: all 0.3s ease;
   cursor: default;
   position: relative;
@@ -153,6 +167,7 @@ function openTool(url) {
   background: radial-gradient(circle at 50% 0%, var(--primary-light, #eef2ff) 0%, transparent 60%);
   opacity: 0;
   transition: opacity 0.3s;
+  pointer-events: none;
 }
 
 .tool-card:hover::after {
@@ -161,8 +176,10 @@ function openTool(url) {
 
 .content-wrapper {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
   margin-bottom: 8px;
   padding: 12px;
 }
@@ -170,6 +187,8 @@ function openTool(url) {
 .card-header {
   position: relative;
   width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .favorite-btn {
@@ -229,6 +248,8 @@ h3 {
   text-overflow: ellipsis;
   color: var(--text-primary, #1e293b);
   transition: color 0.3s;
+  width: 100%;
+  text-align: center;
 }
 
 .tool-card:hover h3 {
@@ -245,22 +266,147 @@ p {
   overflow: hidden;
   min-height: 38px;
   line-height: 1.5;
+  width: 100%;
+  text-align: center;
 }
 
 .env-tags {
-  display: flex;
-  flex-wrap: wrap;
   gap: 6px;
-  justify-content: center;
   margin-top: 8px;
+  min-height: 72px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 1 个环境：只占第一行并拉长（跨两格），第二行空着 */
+.env-tags--count-1 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 8px;
+  max-width: 256px;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 72px;
+  align-content: start;
+}
+.env-tags--count-1 .env-tag {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+/* 2 个环境：图中示意 - 两行等大，纵向居中排列，整体水平居中 */
+.env-tags--count-2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* 每行只有一个环境时拉长：两行各一个，适当加宽 */
+.env-tags--count-2 .env-tag {
+  width: 100%;
+  max-width: 200px;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* 3 个环境：图中示意 - 左列两个上下堆叠，右列一个与左上对齐 */
+.env-tags--count-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  max-width: 256px;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 72px;
+}
+.env-tags--count-3 .env-tag:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+.env-tags--count-3 .env-tag:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+}
+.env-tags--count-3 .env-tag:nth-child(3) {
+  grid-column: 2;
+  grid-row: 1;
+}
+.env-tags--count-3 .env-tag {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+/* 4 个环境：图中示意 - 2×2 网格，等大等间距，整体居中 */
+.env-tags--count-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  max-width: 256px;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 72px;
+}
+.env-tags--count-4 .env-tag {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
 }
 
 .env-tag {
   cursor: pointer;
+  text-decoration: none;
+  color: var(--primary, #615ced);
+  min-height: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+
+/* 环境标签交替底色，与主题协调 */
+.env-tag:nth-child(4n + 1) {
+  background: rgba(97, 92, 237, 0.12);
+  border-color: rgba(97, 92, 237, 0.2);
+}
+.env-tag:nth-child(4n + 2) {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(14, 165, 233, 0.2);
+}
+.env-tag:nth-child(4n + 3) {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+.env-tag:nth-child(4n + 4) {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.2);
 }
 
 .env-tag:hover {
   opacity: 0.9;
+}
+
+.env-tag--disabled {
+  cursor: default;
+  opacity: 0.7;
+  background: var(--bg-secondary, #f3f4f6) !important;
+  border-color: var(--border-color, #e5e7eb) !important;
 }
 
 .tool-actions {
