@@ -12,8 +12,8 @@
       <el-table-column prop="description" label="描述" min-width="200" />
       <el-table-column prop="icon" label="图标" width="80" align="center">
         <template #default="scope">
-          <el-icon v-if="scope.row.icon" :size="24">
-            <component :is="scope.row.icon" />
+          <el-icon v-if="scope.row.icon && iconMap[scope.row.icon]" :size="24">
+            <component :is="iconMap[scope.row.icon]" />
           </el-icon>
         </template>
       </el-table-column>
@@ -45,12 +45,24 @@
           />
         </el-form-item>
         <el-form-item label="图标" prop="icon">
-          <el-select v-model="form.icon" placeholder="选择图标">
+          <el-select v-model="form.icon" placeholder="选择图标" style="width: 100%">
             <el-option label="监控 (Monitor)" value="Monitor" />
+            <el-option label="数据线 (DataLine)" value="DataLine" />
+            <el-option label="数据分析 (DataAnalysis)" value="DataAnalysis" />
             <el-option label="操作 (Operation)" value="Operation" />
             <el-option label="云平台 (ChromeFilled)" value="ChromeFilled" />
             <el-option label="网格 (Grid)" value="Grid" />
             <el-option label="列表 (List)" value="List" />
+            <el-option label="CPU (Cpu)" value="Cpu" />
+            <el-option label="连接 (Connection)" value="Connection" />
+            <el-option label="文档 (Document)" value="Document" />
+            <el-option label="文件夹 (Folder)" value="Folder" />
+            <el-option label="设置 (Setting)" value="Setting" />
+            <el-option label="配置 (SetUp)" value="SetUp" />
+            <el-option label="服务 (Service)" value="Service" />
+            <el-option label="工具 (Tools)" value="Tools" />
+            <el-option label="铃铛 (Bell)" value="Bell" />
+            <el-option label="饼图 (PieChart)" value="PieChart" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -67,8 +79,47 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import {
+  Plus,
+  Monitor,
+  Operation,
+  ChromeFilled,
+  Grid,
+  List,
+  DataLine,
+  DataAnalysis,
+  Cpu,
+  Connection,
+  Document,
+  Folder,
+  Setting,
+  SetUp,
+  Service,
+  Tools,
+  Bell,
+  PieChart,
+} from '@element-plus/icons-vue'
 import request from '../utils/request'
+
+const iconMap = {
+  Monitor,
+  Operation,
+  ChromeFilled,
+  Grid,
+  List,
+  DataLine,
+  DataAnalysis,
+  Cpu,
+  Connection,
+  Document,
+  Folder,
+  Setting,
+  SetUp,
+  Service,
+  Tools,
+  Bell,
+  PieChart,
+}
 
 const categories = ref([])
 const dialogVisible = ref(false)
@@ -98,9 +149,6 @@ const fetchCategories = async () => {
     ])
     const dbCats = Array.isArray(catRes.data) ? catRes.data : []
     const tools = sitesRes.data ?? []
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CategoryManage.vue:fetchCategories',message:'fetchCategories called',data:{dbCategoriesLength:dbCats.length,toolsLength:tools.length,runId:'post-fix'},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
 
     const toolCountByCategory = new Map()
     tools.forEach(tool => {
@@ -142,13 +190,7 @@ const fetchCategories = async () => {
     }
     const list = Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name))
     categories.value = list
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CategoryManage.vue:fetchCategories',message:'fetchCategories result',data:{categoryNames:list.map(c=>c.name),listLength:list.length,runId:'post-fix'},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CategoryManage.vue:fetchCategories',message:'fetchCategories error',data:{err:String(error)},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     console.error('Error fetching categories:', error)
     ElMessage.error('获取分类列表失败')
   }
@@ -223,9 +265,6 @@ const handleDelete = async (row) => {
 const handleSubmit = async () => {
   try {
     await formRef.value.validate()
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CategoryManage.vue:handleSubmit',message:'submit branch',data:{editingId:editingId.value,formName:form.value.name,isAdd:!editingId.value},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
 
     if (editingId.value) {
       if (editingCategoryId.value != null) {
@@ -247,18 +286,12 @@ const handleSubmit = async () => {
         description: form.value.description || '',
         icon: form.value.icon || ''
       })
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CategoryManage.vue:handleSubmit',message:'add branch persisted',data:{formName:form.value.name},timestamp:Date.now(),hypothesisId:'H1',runId:'post-fix'})}).catch(()=>{});
-      // #endregion
       ElMessage.success('分类创建成功，请在创建工具时使用该分类')
     }
 
     dialogVisible.value = false
     fetchCategories()
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CategoryManage.vue:handleSubmit',message:'submit error',data:{err:String(error)},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     console.error('Error submitting form:', error)
   }
 }

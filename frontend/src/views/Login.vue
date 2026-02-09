@@ -114,11 +114,13 @@ const handleSubmit = async () => {
 
 <style scoped>
 .login-page {
-  position: absolute;
+  position: fixed;
   top: 0;
+  left: 0;
   right: 0;
   bottom: 0;
-  left: 200px; /* 左侧菜单宽度 */
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
 }
 

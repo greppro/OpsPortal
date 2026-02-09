@@ -56,7 +56,7 @@ func InitDB() {
 		})
 	}
 
-	// 初始化默认项目
+	// 初始化默认项目（4 个项目模拟企业多项目）
 	var projCount int64
 	DB.Model(&models.Project{}).Count(&projCount)
 	if projCount == 0 {
@@ -64,6 +64,7 @@ func InitDB() {
 			{Name: "cloud", Label: "云平台", IsDefault: true},
 			{Name: "monitor", Label: "监控平台"},
 			{Name: "devops", Label: "DevOps工具"},
+			{Name: "observability", Label: "可观测性"},
 		}
 		for _, proj := range defaultProjects {
 			DB.Create(&proj)
@@ -110,101 +111,124 @@ func InitDB() {
 		}
 	}
 
-	// 初始化工具列表
+	// 初始化分类（带图标），供工具归属与侧边栏展示
+	seedCategories := []struct {
+		name string
+		desc string
+		icon string
+	}{
+		{"可观测性", "链路、指标、日志等可观测性平台", "Monitor"},
+		{"监控", "监控告警与可视化", "DataLine"},
+		{"CI/CD", "持续集成与部署", "Operation"},
+		{"云平台", "云控制台与资源管理", "ChromeFilled"},
+		{"其它", "未归类的工具", "Grid"},
+	}
+	for _, c := range seedCategories {
+		var n int64
+		DB.Model(&models.Category{}).Where("name = ?", c.name).Count(&n)
+		if n == 0 {
+			DB.Create(&models.Category{Name: c.name, Description: c.desc, Icon: c.icon})
+		}
+	}
+
+	// 初始化工具列表：常见运维开源平台与工具，模拟企业多项目多环境
+	// 确保每个项目、每个环境、每个分类下都有卡片；部分工具仅单环境，部分多环境
 	var toolCount int64
 	DB.Model(&models.Tool{}).Count(&toolCount)
 	if toolCount == 0 {
-		// 获取项目ID
-		var cloudProject, monitorProject, devopsProject models.Project
-		DB.Where("name = ?", "cloud").First(&cloudProject)
-		DB.Where("name = ?", "monitor").First(&monitorProject)
-		DB.Where("name = ?", "devops").First(&devopsProject)
+		projects := []string{"cloud", "monitor", "devops", "observability"}
+		envs := []string{"dev", "test", "staging", "prod"}
+		categories := []string{"可观测性", "监控", "CI/CD", "云平台", "其它"}
 
-		tools := []models.Tool{
-			// 云平台工具
-			{
-				Name:        "阿里云控制台",
-				URL:         "https://console.aliyun.com",
-				Description: "阿里云管理控制台，提供云服务器、数据库、存储等云服务",
-				Environment: "prod",
-				Project:    "cloud",
+		// 开源工具池：(name, url, description)，按分类语义复用
+		type toolDef struct {
+			name string
+			url  string
+			desc string
+		}
+		byCat := map[string][]toolDef{
+			"可观测性": {
+				{"Grafana", "https://grafana.com", "度量分析与可视化，支持多种数据源"},
+				{"Jaeger", "https://www.jaegertracing.io", "分布式链路追踪"},
+				{"Zipkin", "https://zipkin.io", "分布式追踪系统"},
+				{"Tempo", "https://grafana.com/oss/tempo/", "Grafana 分布式追踪后端"},
+				{"Loki", "https://grafana.com/oss/loki/", "日志聚合系统"},
 			},
-			{
-				Name:        "腾讯云控制台",
-				URL:         "https://console.cloud.tencent.com",
-				Description: "腾讯云管理控制台，提供云服务器、数据库、CDN等云服务",
-				Environment: "prod",
-				Project:    "cloud",
+			"监控": {
+				{"Prometheus", "https://prometheus.io", "监控告警与时序数据库"},
+				{"AlertManager", "https://prometheus.io/docs/alerting/latest/alertmanager/", "告警分组与路由"},
+				{"Thanos", "https://thanos.io", "Prometheus 高可用与长期存储"},
+				{"VictoriaMetrics", "https://victoriametrics.com", "高性能时序数据库"},
+				{"Node Exporter", "https://github.com/prometheus/node_exporter", "主机指标采集"},
 			},
-			{
-				Name:        "华为云控制台",
-				URL:         "https://console.huaweicloud.com",
-				Description: "华为云管理控制台，提供云计算、人工智能、大数据等服务",
-				Environment: "prod",
-				Project:    "cloud",
+			"CI/CD": {
+				{"Jenkins", "https://www.jenkins.io", "持续集成与持续交付"},
+				{"GitLab", "https://gitlab.com", "代码托管与 CI/CD 平台"},
+				{"Argo CD", "https://argoproj.github.io/cd", "Kubernetes 声明式 GitOps 部署"},
+				{"Tekton", "https://tekton.dev", "Kubernetes 原生 CI/CD"},
+				{"Drone", "https://www.drone.io", "轻量级 CI 平台"},
 			},
-			// 监控平台工具
-			{
-				Name:        "Grafana",
-				URL:         "https://grafana.com",
-				Description: "开源的度量分析和可视化工具，支持多种数据源",
-				Environment: "prod",
-				Project:    "monitor",
+			"云平台": {
+				{"阿里云控制台", "https://console.aliyun.com", "阿里云管理控制台"},
+				{"腾讯云控制台", "https://console.cloud.tencent.com", "腾讯云管理控制台"},
+				{"华为云控制台", "https://console.huaweicloud.com", "华为云管理控制台"},
+				{"Kubernetes Dashboard", "https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/", "K8s 集群管理界面"},
+				{"Rancher", "https://www.rancher.com", "多集群 K8s 管理"},
 			},
-			{
-				Name:        "Prometheus",
-				URL:         "https://prometheus.io",
-				Description: "开源的监控告警系统，提供强大的时序数据存储和查询功能",
-				Environment: "prod",
-				Project:    "monitor",
-			},
-			{
-				Name:        "AlertManager",
-				URL:         "https://prometheus.io/docs/alerting/latest/alertmanager/",
-				Description: "Prometheus告警管理器，处理告警分发和分组",
-				Environment: "prod",
-				Project:    "monitor",
-			},
-			// DevOps工具
-			{
-				Name:        "Jenkins",
-				URL:         "https://www.jenkins.io",
-				Description: "开源的持续集成和持续交付工具，自动化构建、测试和部署",
-				Environment: "prod",
-				Project:    "devops",
-			},
-			{
-				Name:        "ArgoCD",
-				URL:         "https://argoproj.github.io/cd",
-				Description: "Kubernetes的声明式持续部署工具",
-				Environment: "prod",
-				Project:    "devops",
-			},
-			{
-				Name:        "Harbor",
-				URL:         "https://goharbor.io",
-				Description: "企业级容器镜像仓库，提供镜像存储、签名、扫描等功能",
-				Environment: "prod",
-				Project:    "devops",
-			},
-			{
-				Name:        "GitLab",
-				URL:         "https://gitlab.com",
-				Description: "完整的 DevOps 平台，提供代码托管、CI/CD、制品库等功能",
-				Environment: "prod",
-				Project:    "devops",
-			},
-			{
-				Name:        "SonarQube",
-				URL:         "https://www.sonarqube.org",
-				Description: "代码质量管理平台，提供代码检查、漏洞分析等功能",
-				Environment: "prod",
-				Project:    "devops",
+			"其它": {
+				{"Harbor", "https://goharbor.io", "企业级镜像仓库"},
+				{"SonarQube", "https://www.sonarqube.org", "代码质量与安全分析"},
+				{"Nexus", "https://www.sonatype.com/products/nexus-repository", "制品库管理"},
+				{"Consul", "https://www.consul.io", "服务发现与配置"},
+				{"Vault", "https://www.vaultproject.io", "密钥与敏感信息管理"},
 			},
 		}
 
-		for _, tool := range tools {
-			DB.Create(&tool)
+		idx := 0
+		for _, project := range projects {
+			for _, env := range envs {
+				for _, category := range categories {
+					pool := byCat[category]
+					if len(pool) == 0 {
+						continue
+					}
+					tdef := pool[idx%len(pool)]
+					idx++
+					DB.Create(&models.Tool{
+						Name:        tdef.name,
+						URL:         tdef.url,
+						Description: tdef.desc,
+						Environment: env,
+						Project:     project,
+						Category:    category,
+					})
+				}
+			}
+		}
+		// 再补充一批「多环境」同款工具：同一工具名在多个环境出现（部分 2/3/4 环境）
+		multiEnvTools := []struct {
+			name, url, desc, project, category string
+			envs                               []string
+		}{
+			{"Grafana", "https://grafana.com", "度量分析与可视化", "monitor", "可观测性", []string{"dev", "test", "staging", "prod"}},
+			{"Prometheus", "https://prometheus.io", "监控告警系统", "monitor", "监控", []string{"dev", "test", "prod"}},
+			{"Jenkins", "https://www.jenkins.io", "CI/CD", "devops", "CI/CD", []string{"dev", "staging", "prod"}},
+			{"Argo CD", "https://argoproj.github.io/cd", "GitOps 部署", "devops", "CI/CD", []string{"dev", "test", "staging", "prod"}},
+			{"Harbor", "https://goharbor.io", "镜像仓库", "devops", "其它", []string{"test", "staging", "prod"}},
+			{"Jaeger", "https://www.jaegertracing.io", "链路追踪", "observability", "可观测性", []string{"dev", "prod"}},
+			{"阿里云控制台", "https://console.aliyun.com", "阿里云控制台", "cloud", "云平台", []string{"dev", "prod"}},
+		}
+		for _, m := range multiEnvTools {
+			for _, e := range m.envs {
+				DB.Create(&models.Tool{
+					Name:        m.name,
+					URL:         m.url,
+					Description: m.desc,
+					Environment: e,
+					Project:     m.project,
+					Category:    m.category,
+				})
+			}
 		}
 	}
 
@@ -214,10 +238,4 @@ func InitDB() {
 		log.Fatal("Failed to migrate Notice model:", err)
 	}
 
-	// 确保默认分类「其它」存在
-	var otherCount int64
-	DB.Model(&models.Category{}).Where("name = ?", "其它").Count(&otherCount)
-	if otherCount == 0 {
-		DB.Create(&models.Category{Name: "其它", Description: "未归类的工具"})
-	}
 }

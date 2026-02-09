@@ -44,10 +44,7 @@
         :index="cat"
       >
         <el-icon>
-          <Monitor v-if="cat === '可观测性' || cat === '监控'" />
-          <Operation v-else-if="cat === 'DevOps' || cat === 'devops'" />
-          <ChromeFilled v-else-if="cat === '云平台'" />
-          <Grid v-else />
+          <component :is="iconMap[categoryIconMap[cat] || 'Grid']" />
         </el-icon>
         <span>{{ cat }}</span>
       </el-menu-item>
@@ -58,7 +55,26 @@
 <script setup>
 import { ref, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
-import { Monitor, List, Grid, ChromeFilled, Operation, Star } from '@element-plus/icons-vue'
+import {
+  Monitor,
+  List,
+  Grid,
+  ChromeFilled,
+  Operation,
+  Star,
+  DataLine,
+  DataAnalysis,
+  Cpu,
+  Connection,
+  Document,
+  Folder,
+  Setting,
+  SetUp,
+  Service,
+  Tools,
+  Bell,
+  PieChart,
+} from '@element-plus/icons-vue'
 import request from '../../utils/request'
 
 const router = useRouter()
@@ -67,6 +83,26 @@ const activeProject = ref('')
 const projects = ref([])
 const activeCategory = ref('all')
 const categories = ref([])
+const categoryIconMap = ref({}) // 分类名 -> 图标组件名（来自 API）
+const iconMap = {
+  Monitor,
+  Operation,
+  ChromeFilled,
+  Grid,
+  List,
+  DataLine,
+  DataAnalysis,
+  Cpu,
+  Connection,
+  Document,
+  Folder,
+  Setting,
+  SetUp,
+  Service,
+  Tools,
+  Bell,
+  PieChart,
+}
 
 // 定义 props 接收父组件传递的数据（如果有必要）
 // 这里改为自包含逻辑，但通过 emit 通知父组件或 RouterView
@@ -94,9 +130,6 @@ const fetchProjects = async () => {
     // 如果当前没有选中项目，且有默认项目，则自动选中默认项目
     if (!activeProject.value && projects.value.length > 0) {
       const defaultProject = projects.value.find(p => p.is_default)
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Sidebar.vue:fetchProjects',message:'default project check',data:{projectsCount:projects.value.length,defaultProject:defaultProject?{name:defaultProject.name,label:defaultProject.label}:null,is_defaults:projects.value.map(p=>p.is_default)},timestamp:Date.now(),hypothesisId:'H3,H5'})}).catch(()=>{});
-      // #endregion
       if (defaultProject) {
         activeProject.value = defaultProject.name
         emit('project-change', defaultProject.name)
@@ -107,6 +140,15 @@ const fetchProjects = async () => {
   }
 }
 
+function getDefaultIcon(name) {
+  if (!name) return 'Grid'
+  const n = name.trim()
+  if (n.includes('监控') || n.includes('可观测')) return 'Monitor'
+  if (n.includes('DevOps') || n.includes('运维')) return 'Operation'
+  if (n.includes('云')) return 'ChromeFilled'
+  return 'Grid'
+}
+
 const fetchCategories = async () => {
   try {
     const [catRes, sitesRes] = await Promise.all([
@@ -114,18 +156,27 @@ const fetchCategories = async () => {
       request.get('/api/sites')
     ])
     const uniqueCategories = new Set()
+    const iconByName = {}
     const dbCats = Array.isArray(catRes.data) ? catRes.data : []
     dbCats.forEach(c => {
-      if (c.name && c.name.trim()) uniqueCategories.add(c.name.trim())
+      if (c.name && c.name.trim()) {
+        uniqueCategories.add(c.name.trim())
+        iconByName[c.name.trim()] = (c.icon && c.icon.trim()) ? c.icon.trim() : getDefaultIcon(c.name)
+      }
     })
     const tools = sitesRes.data ?? []
     tools.forEach(tool => {
       if (tool.category && tool.category.trim()) {
         uniqueCategories.add(tool.category.trim())
+        if (!(tool.category.trim() in iconByName)) {
+          iconByName[tool.category.trim()] = getDefaultIcon(tool.category)
+        }
       }
     })
     uniqueCategories.add('其它')
+    if (!('其它' in iconByName)) iconByName['其它'] = getDefaultIcon('其它')
     categories.value = Array.from(uniqueCategories).sort()
+    categoryIconMap.value = iconByName
   } catch (error) {
     console.error('Error fetching categories:', error)
   }
