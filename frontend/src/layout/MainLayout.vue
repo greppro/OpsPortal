@@ -18,6 +18,16 @@
             :active-category="activeCategory"
           ></router-view>
         </el-main>
+        <footer class="layout-footer">
+          <a
+            href="https://github.com/greppro/OpsPortal"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="footer-link"
+          >
+            GitHub · greppro/OpsPortal
+          </a>
+        </footer>
       </el-container>
     </el-container>
   </div>
@@ -109,5 +119,25 @@ const handleCategorySelect = (val) => {
   display: flex;
   flex-direction: column;
   background-color: var(--bg-secondary, #f5f6f8);
+}
+
+.layout-footer {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  background-color: var(--bg-secondary, #f5f6f8);
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+.footer-link {
+  color: var(--el-text-color-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: var(--el-color-primary);
 }
 </style>
