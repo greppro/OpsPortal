@@ -76,7 +76,7 @@ func main() {
 		// 健康检查接口
 		public.GET("/api/health", func(c *gin.Context) {
 			c.JSON(200, gin.H{
-				"status": "ok",
+				"status":  "ok",
 				"message": "OpsPortal backend is running",
 			})
 		})
@@ -98,6 +98,7 @@ func main() {
 
 		// 系统配置（站点标题）
 		public.GET("/api/config/site-title", handlers.GetSiteTitle)
+		public.GET("/api/site-config", handlers.GetSiteConfig)
 
 		// 分类列表（公开，供首页侧边栏与分类管理页使用）
 		public.GET("/api/categories", handlers.GetCategories)
@@ -136,6 +137,7 @@ func main() {
 
 		// 系统配置（站点标题）
 		auth.PUT("/config/site-title", handlers.PutSiteTitle)
+		auth.PUT("/site-config", handlers.PutSiteConfig)
 
 		// 分类管理
 		auth.POST("/categories", handlers.CreateCategory)

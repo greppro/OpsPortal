@@ -51,11 +51,12 @@ const siteTitle = ref('OpsPortal运维导航')
 
 const refreshSiteTitle = async () => {
   try {
-    const res = await request.get('/api/config/site-title')
-    siteTitle.value = res.data?.site_title ?? 'OpsPortal运维导航'
+    const res = await request.get('/api/site-config')
+    siteTitle.value = res.data?.system_name ?? 'OpsPortal运维导航'
   } catch (_) {
     siteTitle.value = 'OpsPortal运维导航'
   }
+  document.title = siteTitle.value
 }
 
 onMounted(() => {

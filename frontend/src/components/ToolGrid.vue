@@ -33,6 +33,7 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   class="env-tag"
+                  @click="recordRecent(tool)"
                 >
                   {{ env.environment ?? env.label }}
                 </a>
@@ -68,7 +69,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['edit', 'delete'])
+const emit = defineEmits(['edit', 'delete', 'record-recent'])
 
 function firstUrl(tool) {
   return tool.envs?.[0]?.url ?? ''
@@ -126,6 +127,10 @@ function getEnvHref(env) {
   if (!t) return '#'
   if (/^https?\/+/i.test(t)) t = t.replace(/^https?\/+:?/i, 'https://')
   return /^https?:\/\//i.test(t) ? t : `https://${t}`
+}
+
+function recordRecent(tool) {
+  emit('record-recent', tool)
 }
 </script>
 

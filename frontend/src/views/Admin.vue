@@ -45,7 +45,6 @@ import Environment from './EnvironmentManage.vue'
 import Project from './Project.vue'
 import NoticeManage from './NoticeManage.vue'
 import LogoManage from './LogoManage.vue'
-import SettingsManage from './SettingsManage.vue'
 
 const businessItems = [
   { name: 'sites', label: '网址管理' },
@@ -56,8 +55,7 @@ const businessItems = [
 ]
 
 const systemItems = [
-  { name: 'logo', label: 'Logo管理' },
-  { name: 'settings', label: '系统设置' }
+  { name: 'logo', label: '站点配置' }
 ]
 
 const activeTab = ref('sites')
@@ -68,8 +66,7 @@ const componentMap = {
   environments: Environment,
   projects: Project,
   notices: NoticeManage,
-  logo: LogoManage,
-  settings: SettingsManage
+  logo: LogoManage
 }
 
 const currentComponent = computed(() => componentMap[activeTab.value])

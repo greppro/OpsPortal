@@ -81,6 +81,13 @@ func InitDB() {
 		}
 	}
 
+	var titleConfig models.SystemConfig
+	if err := DB.Where("key = ?", "site_title").First(&titleConfig).Error; err != nil {
+		DB.Create(&models.SystemConfig{Key: "site_title", Value: "OpsPortal运维导航"})
+	} else if titleConfig.Value == "" {
+		DB.Model(&titleConfig).Update("value", "OpsPortal运维导航")
+	}
+
 	// 初始化默认环境
 	var envCount int64
 	DB.Model(&models.Environment{}).Count(&envCount)

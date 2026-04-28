@@ -1,5 +1,29 @@
 <template>
   <div class="logo-manage">
+    <el-card class="config-card">
+      <template #header>
+        <span>系统名称</span>
+      </template>
+      <el-form :model="siteConfigForm" label-width="100px">
+        <el-form-item label="系统名称">
+          <el-input
+            v-model="siteConfigForm.system_name"
+            maxlength="40"
+            show-word-limit
+            placeholder="请输入系统名称"
+            class="system-name-input"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="savingConfig" @click="handleSaveConfig">保存</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card class="config-card">
+      <template #header>
+        <span>Logo 配置</span>
+      </template>
     <div class="current-logo">
       <h3>当前Logo</h3>
       <div class="logo-preview">
@@ -21,6 +45,7 @@
         :disabled="!currentLogo"
       >删除Logo</el-button>
     </div>
+    </el-card>
 
     <el-dialog
       title="更换Logo"
@@ -66,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '../utils/request'
@@ -76,10 +101,44 @@ const currentLogo = ref('')
 const previewUrl = ref('')
 const uploadRef = ref(null)
 const selectedFile = ref(null)
+const savingConfig = ref(false)
+const siteConfigForm = ref({ system_name: 'OpsPortal运维导航' })
+const refreshSiteTitle = inject('refreshSiteTitle', null)
 
 const uploadUrl = `${import.meta.env.VITE_API_URL}/api/upload/logo`
 const uploadHeaders = {
   Authorization: `Bearer ${localStorage.getItem('token')}`
+}
+
+const fetchSiteConfig = async () => {
+  try {
+    const res = await request.get('/api/site-config')
+    siteConfigForm.value.system_name = res.data?.system_name || 'OpsPortal运维导航'
+  } catch (error) {
+    console.error('Error fetching site config:', error)
+    siteConfigForm.value.system_name = 'OpsPortal运维导航'
+  }
+}
+
+const handleSaveConfig = async () => {
+  const systemName = siteConfigForm.value.system_name.trim()
+  if (systemName.length < 2 || systemName.length > 40) {
+    ElMessage.error('系统名称长度需为 2 到 40 个字符')
+    return
+  }
+  savingConfig.value = true
+  try {
+    const res = await request.put('/api/site-config', { system_name: systemName })
+    siteConfigForm.value.system_name = res.data?.system_name || systemName
+    ElMessage.success('系统名称保存成功')
+    if (typeof refreshSiteTitle === 'function') {
+      await refreshSiteTitle()
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.error || '保存失败')
+  } finally {
+    savingConfig.value = false
+  }
 }
 
 // 获取当前 Logo
@@ -189,6 +248,7 @@ const handleDelete = async () => {
 }
 
 onMounted(() => {
+  fetchSiteConfig()
   fetchLogo()
 })
 </script>
@@ -196,6 +256,15 @@ onMounted(() => {
 <style scoped>
 .logo-manage {
   padding: 20px;
+}
+
+.config-card {
+  max-width: 720px;
+  margin-bottom: 20px;
+}
+
+.system-name-input {
+  max-width: 420px;
 }
 
 .current-logo {

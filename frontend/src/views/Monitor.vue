@@ -1,7 +1,32 @@
 <template>
   <div class="tools-container">
+    <div class="tools-toolbar">
+      <el-input
+        v-model="searchQuery"
+        placeholder="搜索工具、描述、URL、项目、环境"
+        clearable
+        class="search-input"
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+    </div>
+
     <div class="tools-content">
-      <tool-grid :tools="filteredTools" />
+      <section v-if="showRecentTools" class="recent-section">
+        <div class="section-header">
+          <h2>最近访问</h2>
+          <span>最多显示 8 个工具</span>
+        </div>
+        <tool-grid :tools="recentTools" @record-recent="recordRecentTool" />
+      </section>
+
+      <div class="section-header">
+        <h2>{{ searchQuery.trim() ? '搜索结果' : '全部工具' }}</h2>
+        <span>共 {{ filteredTools.length }} 个工具</span>
+      </div>
+      <tool-grid :tools="filteredTools" @record-recent="recordRecentTool" />
     </div>
   </div>
 </template>
@@ -9,9 +34,13 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import request from '../utils/request'
 import ToolGrid from '../components/ToolGrid.vue'
 import { getEnvLabel } from '../config/environment'
+
+const RECENT_TOOLS_KEY = 'opsportal-recent-tools'
+const RECENT_TOOLS_LIMIT = 8
 
 const props = defineProps({
   activeProject: {
@@ -27,6 +56,8 @@ const props = defineProps({
 const tools = ref([])
 const projects = ref([])
 const environments = ref([])
+const searchQuery = ref('')
+const recentTools = ref([])
 
 const currentProject = computed(() => props.activeProject)
 const currentCategory = computed(() => props.activeCategory)
@@ -77,13 +108,67 @@ const filteredTools = computed(() => {
   const cat = (currentCategory.value || '').trim()
   if (cat && cat !== 'all') {
     result = result.filter(g => (g.category || '').trim() === cat)
-    // #region agent log
-    const groupCats = groupedTools.value.map(g => ({ name: g.name, category: g.category, match: (g.category || '').trim() === cat }))
-    fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Monitor.vue:filteredTools',message:'category filter',data:{activeCategory:cat,filteredCount:result.length,totalGroups:groupedTools.value.length,sampleGroupCategories:groupCats.slice(0,20),runId:'post-fix'},timestamp:Date.now(),hypothesisId:'H2,H3,H4'})}).catch(()=>{});
-    // #endregion
+  }
+  const query = searchQuery.value.trim().toLowerCase()
+  if (query) {
+    result = result.filter(tool => toolMatchesSearch(tool, query))
   }
   return result
 })
+
+const showRecentTools = computed(() => {
+  const cat = (currentCategory.value || '').trim()
+  return recentTools.value.length > 0 && !searchQuery.value.trim() && (!cat || cat === 'all')
+})
+
+function toolMatchesSearch(tool, query) {
+  const fields = [
+    tool.name,
+    tool.description,
+    tool.project,
+    tool.category,
+    ...(tool.envs || []).flatMap(env => [
+      env.environment,
+      env.label,
+      env.url
+    ])
+  ]
+  return fields.some(value => String(value || '').toLowerCase().includes(query))
+}
+
+function normalizeRecentTool(tool) {
+  return {
+    key: tool.key,
+    name: tool.name,
+    description: tool.description || '',
+    category: tool.category || '',
+    project: tool.project || '',
+    envs: (tool.envs || []).map(env => ({
+      id: env.id,
+      environment: env.environment,
+      label: env.label,
+      url: env.url
+    })),
+    visitedAt: new Date().toISOString()
+  }
+}
+
+function loadRecentTools() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(RECENT_TOOLS_KEY) || '[]')
+    recentTools.value = Array.isArray(stored) ? stored.slice(0, RECENT_TOOLS_LIMIT) : []
+  } catch (error) {
+    console.error('Failed to load recent tools:', error)
+    recentTools.value = []
+  }
+}
+
+function recordRecentTool(tool) {
+  if (!tool?.key) return
+  const current = recentTools.value.filter(item => item.key !== tool.key)
+  recentTools.value = [normalizeRecentTool(tool), ...current].slice(0, RECENT_TOOLS_LIMIT)
+  localStorage.setItem(RECENT_TOOLS_KEY, JSON.stringify(recentTools.value))
+}
 
 const fetchProjects = async () => {
   try {
@@ -117,11 +202,6 @@ const fetchTools = async () => {
     if (thisId !== fetchToolsId) return
     const raw = response.data ?? []
     tools.value = raw
-    // #region agent log
-    const sample = raw.slice(0, 15).map(t => ({ name: t.name, category: t.category, hasCategory: 'category' in t, url: t.url, hasUrl: !!t.url }))
-    const uniq = [...new Set(raw.map(t => (t && t.category != null ? String(t.category).trim() : '')))].filter(Boolean)
-    fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Monitor.vue:fetchTools',message:'sites loaded',data:{toolsLength:raw.length,sample,uniqueCategoriesFromApi:uniq},timestamp:Date.now(),hypothesisId:'H1,H2,H5'})}).catch(()=>{});
-    // #endregion
   } catch (error) {
     if (thisId !== fetchToolsId) return
     console.error('Error fetching tools:', error)
@@ -134,6 +214,7 @@ watch(() => props.activeProject, () => {
 })
 
 onMounted(async () => {
+  loadRecentTools()
   await fetchProjects()
   await fetchEnvironments()
   fetchTools()
@@ -150,9 +231,44 @@ onMounted(async () => {
   background-color: var(--bg-secondary, #f5f6f8);
 }
 
+.tools-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-start;
+  padding-bottom: 16px;
+}
+
+.search-input {
+  width: min(520px, 100%);
+}
+
 .tools-content {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+}
+
+.recent-section {
+  margin-bottom: 8px;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0 16px;
+  margin: 4px 0 8px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+}
+
+.section-header span {
+  font-size: 13px;
+  color: var(--text-secondary, #64748b);
 }
 </style>
