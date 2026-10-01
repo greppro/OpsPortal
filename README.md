@@ -10,11 +10,15 @@ OpsPortal 是一个面向运维、DevOps 和平台团队的内部工具导航平
 
 ### 导航首页
 
+环境按钮上的小圆点显示可用性（绿色可用、红色不可用），工具栏可按「全部 / 不可用」筛选。
+
 ![导航首页](docs/screenshot-home-light.png)
 
-### 项目管理
+### 后台 · 网址可用性检测
 
-![项目管理](docs/screenshot-project-manage.png)
+展开网址可查看每个环境的检测状态、失败原因和检测时间，并可单条「检测」或关闭检测。
+
+![后台网址管理](docs/screenshot-admin-probe.png)
 
 ## 主要功能
 
