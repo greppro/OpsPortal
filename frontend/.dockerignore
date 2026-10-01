@@ -1,0 +1,5 @@
+# 依赖在镜像里重新安装；本地 node_modules 含当前系统平台的二进制，复制进去会导致构建失败
+node_modules/
+dist/
+.env.local
+.env.*.local

@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"ops-portal/config"
+	"ops-portal/models"
 	"ops-portal/utils"
 	"strings"
 
@@ -25,8 +27,17 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// 用户被删除或修改过密码（版本号变化）时，旧 token 一律失效
+		var user models.User
+		if err := config.DB.Where("username = ?", claims.Username).First(&user).Error; err != nil ||
+			user.TokenVersion != claims.TokenVersion {
+			c.AbortWithStatusJSON(401, gin.H{"error": "token无效或已过期"})
+			return
+		}
+
 		// 将用户信息存储在上下文中
-		c.Set("username", claims.Username)
+		c.Set("username", user.Username)
+		c.Set("userID", user.ID)
 		c.Next()
 	}
 }

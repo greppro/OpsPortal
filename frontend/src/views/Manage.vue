@@ -39,8 +39,28 @@
               </template>
             </el-table-column>
             <el-table-column prop="url" label="地址" min-width="200" show-overflow-tooltip />
-            <el-table-column label="操作" width="160" align="right">
+            <el-table-column v-if="probeEnabled" label="可用性" min-width="240">
               <template #default="{ row: envRow }">
+                <span v-if="envRow.probe_disabled" class="probe-cell probe-cell--off">未开启检测</span>
+                <span v-else class="probe-cell">
+                  <span
+                    class="probe-dot"
+                    :class="'probe-dot--' + (statusOf(envRow.id)?.state || 'pending')"
+                    aria-hidden="true"
+                  ></span>
+                  {{ probeSummary(statusOf(envRow.id) || { state: 'pending' }) }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="200" align="right">
+              <template #default="{ row: envRow }">
+                <el-button
+                  v-if="probeEnabled && !envRow.probe_disabled"
+                  type="primary"
+                  link
+                  :loading="checkingId === envRow.id"
+                  @click="handleCheck(envRow)"
+                >检测</el-button>
                 <el-button type="primary" link @click="handleEdit(envRow)">编辑</el-button>
                 <el-button type="danger" link @click="handleDelete(envRow)">删除</el-button>
               </template>
@@ -95,6 +115,12 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="可用性检测">
+          <div class="probe-switch">
+            <el-switch v-model="form.probe_enabled" />
+            <span class="form-hint">定时检测这个地址能否访问。关闭后不检测，也不会出现在 Prometheus 服务发现里</span>
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -112,8 +138,17 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '../utils/request'
 import { getEnvTagType, getEnvLabel } from '../config/environment'
 import EnvironmentSelect from '../components/EnvironmentSelect.vue'
+import { useProbeStatus } from '../composables/useProbeStatus'
+import { probeSummary } from '../utils/probe'
 
 const DEFAULT_CATEGORY = '其它'
+
+const {
+  enabled: probeEnabled,
+  statusOf,
+  refresh: refreshProbe,
+  setResult: setProbeResult
+} = useProbeStatus()
 
 const siteList = ref([])
 const projectList = ref([])
@@ -133,7 +168,8 @@ const form = ref({
   description: '',
   environment: '',
   project: '',
-  category: DEFAULT_CATEGORY
+  category: DEFAULT_CATEGORY,
+  probe_enabled: true
 })
 
 const rules = {
@@ -203,18 +239,41 @@ const handleAdd = () => {
     description: '',
     environment: '',
     project: '',
-    category: DEFAULT_CATEGORY
+    category: DEFAULT_CATEGORY,
+    probe_enabled: true
   }
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   dialogTitle.value = '编辑网址'
+  const { probe_disabled, ...rest } = row
   form.value = {
-    ...row,
-    category: row.category && row.category.trim() ? row.category.trim() : DEFAULT_CATEGORY
+    ...rest,
+    category: row.category && row.category.trim() ? row.category.trim() : DEFAULT_CATEGORY,
+    probe_enabled: !probe_disabled
   }
   dialogVisible.value = true
+}
+
+// 立即检测一个地址，结果同步到首页状态
+const checkingId = ref(null)
+const handleCheck = async (row) => {
+  checkingId.value = row.id
+  try {
+    const res = await request.post(`/api/probe/check/${row.id}`, null, { timeout: 30000 })
+    setProbeResult(row.id, res.data)
+    const text = probeSummary(res.data)
+    if (res.data?.state === 'up') {
+      ElMessage.success(text)
+    } else {
+      ElMessage.warning(text)
+    }
+  } catch (error) {
+    console.error('Check error:', error)
+  } finally {
+    checkingId.value = null
+  }
 }
 
 const handleDelete = async (row) => {
@@ -225,12 +284,6 @@ const handleDelete = async (row) => {
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
-      // #region agent log
-      const status = error.response?.status
-      const data = error.response?.data
-      const hasToken = !!localStorage.getItem('token')
-      fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'Manage.vue:handleDelete', message: 'delete site error', data: { status, data, rowId: row?.id, hasToken }, timestamp: Date.now(), hypothesisId: 'Hdel' }) }).catch(() => {})
-      // #endregion
       console.error('Delete error:', error)
       ElMessage.error('删除失败')
     }
@@ -242,7 +295,8 @@ const handleSubmit = async () => {
   await formRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        const payload = { ...form.value }
+        const { probe_enabled, ...rest } = form.value
+        const payload = { ...rest, probe_disabled: !probe_enabled }
         if (!payload.category || !payload.category.trim()) {
           payload.category = DEFAULT_CATEGORY
         }
@@ -255,13 +309,9 @@ const handleSubmit = async () => {
         }
         dialogVisible.value = false
         fetchData()
+        // 后端保存后会立即检测一次，稍后刷新状态
+        if (probe_enabled) setTimeout(refreshProbe, 2000)
       } catch (error) {
-        // #region agent log
-        const status = error.response?.status
-        const data = error.response?.data
-        const hasToken = !!localStorage.getItem('token')
-        fetch('http://127.0.0.1:7242/ingest/3c90f934-050e-4fa8-bc2b-4f202bd091da', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'Manage.vue:handleSubmit', message: 'submit site error', data: { status, data, payload: { id: form.value?.id, name: form.value?.name, url: form.value?.url, project: form.value?.project, environment: form.value?.environment }, hasToken }, timestamp: Date.now(), hypothesisId: 'Hsub' }) }).catch(() => {})
-        // #endregion
         console.error('Submit error:', error)
         ElMessage.error('操作失败')
       }
@@ -310,5 +360,47 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.probe-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.form-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary, #6b7280);
+}
+
+.probe-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary, #111827);
+}
+
+.probe-cell--off {
+  color: var(--text-secondary, #6b7280);
+}
+
+.probe-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.probe-dot--up {
+  background: #22c55e;
+}
+
+.probe-dot--down {
+  background: #ef4444;
+}
+
+.probe-dot--pending {
+  box-shadow: inset 0 0 0 1.5px var(--text-secondary, #9ca3af);
 }
 </style>

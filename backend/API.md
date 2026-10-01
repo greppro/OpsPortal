@@ -18,13 +18,15 @@
     "token": "string",
     "user": {
       "username": "string"
-    }
+    },
+    "default_password": false
   }
   ```
+  `default_password` 为 true 表示仍在使用旧版本的默认密码，前端会提示修改。
 
 ### 2. 修改密码
 - **URL**: `/api/auth/change-password`
-- **方法**: POST
+- **方法**: POST（需要登录）
 - **请求体**: 
   ```json
   {
@@ -32,12 +34,15 @@
     "newPassword": "string"
   }
   ```
+  新密码至少 8 位，不超过 72 字节，不能与旧密码相同。
 - **响应**: 
   ```json
   {
-    "message": "密码修改成功"
+    "message": "密码修改成功",
+    "token": "string"
   }
   ```
+  修改成功后之前签发的 token 全部失效，需要改用响应里的新 token。
 
 ## 网址管理接口
 
@@ -59,6 +64,7 @@
     "project": "string",
     "category": "string",
     "icon": "string",
+    "probe_disabled": "boolean",
     "created_at": "datetime",
     "updated_at": "datetime"
   }]
@@ -67,13 +73,13 @@
 ### 4. 添加网址
 - **URL**: `/api/sites`
 - **方法**: POST
-- **请求体**: 网址对象（不含 id）
+- **请求体**: 网址对象（不含 id、created_at、updated_at，传了也会被忽略）。`url` 只支持 http/https，可以省略协议（按 https 处理）；`probe_disabled` 为 true 时不做可用性检测
 - **响应**: 创建的网址对象
 
 ### 5. 更新网址
 - **URL**: `/api/sites/:id`
 - **方法**: PUT
-- **请求体**: 网址对象
+- **请求体**: 网址对象（只更新路径里 id 对应的记录，请求体里的 id 会被忽略）
 - **响应**: 更新后的网址对象
 
 ### 6. 删除网址
@@ -175,6 +181,44 @@
   }
   ```
 
+## 可用性检测与 Prometheus 接口
+
+### 15. 获取检测结果
+- **URL**: `/api/probe/status`
+- **方法**: GET（公开）
+- **响应**: key 为工具 id；`state` 取值 `up` / `down` / `pending`，关闭了检测的工具不出现
+  ```json
+  {
+    "enabled": true,
+    "interval_seconds": 60,
+    "last_round_at": "datetime",
+    "results": {
+      "12": {"state": "up", "status_code": 200, "duration_ms": 87, "checked_at": "datetime"},
+      "13": {"state": "down", "duration_ms": 5000, "reason": "timeout", "checked_at": "datetime"}
+    }
+  }
+  ```
+  `reason` 取值：`http_status`、`timeout`、`dns`、`connection_refused`、`tls`、`invalid_url`、`network`。
+
+### 16. 立即检测
+- **URL**: `/api/probe/check/:id`
+- **方法**: POST（需要登录）
+- **响应**: 单个工具的检测结果，格式同上
+
+### 17. Prometheus 指标
+- **URL**: `/metrics`
+- **方法**: GET（设置了 `METRICS_TOKEN` 时需要 `Authorization: Bearer <METRICS_TOKEN>`）
+- **响应**: Prometheus 文本格式，指标说明见 README
+
+### 18. Prometheus http_sd 服务发现
+- **URL**: `/prometheus/targets`
+- **方法**: GET（鉴权同上）
+- **查询参数**: project、environment、category（可选）
+- **响应**:
+  ```json
+  [{"targets": ["https://grafana.example.com"], "labels": {"tool_id": "12", "tool": "Grafana", "project": "monitor", "environment": "prod", "category": "监控"}}]
+  ```
+
 ## 通用说明
 
 ### 认证
@@ -200,9 +244,9 @@ json
 - 500: 服务器内部错误
 
 ### 开发说明
-1. 默认用��名密码：
+1. 管理员账号：
    - 用户名：admin
-   - 密码：admin123
+   - 初始密码：首次启动时取环境变量 ADMIN_PASSWORD；未设置则随机生成并打印在启动日志里
 
 2. 开发环境：
    - 后端服务端口：8080

@@ -11,6 +11,13 @@
           <el-icon><Search /></el-icon>
         </template>
       </el-input>
+      <el-segmented
+        v-if="probeEnabled"
+        v-model="statusFilter"
+        :options="statusOptions"
+        class="status-filter"
+        aria-label="按可用性筛选"
+      />
     </div>
 
     <div class="tools-content">
@@ -23,10 +30,15 @@
       </section>
 
       <div class="section-header">
-        <h2>{{ searchQuery.trim() ? '搜索结果' : '全部工具' }}</h2>
+        <h2>{{ sectionTitle }}</h2>
         <span>共 {{ filteredTools.length }} 个工具</span>
       </div>
-      <tool-grid :tools="filteredTools" @record-recent="recordRecentTool" />
+      <el-empty
+        v-if="statusFilter === 'down' && filteredTools.length === 0"
+        description="所有入口都可用"
+        :image-size="80"
+      />
+      <tool-grid v-else :tools="filteredTools" @record-recent="recordRecentTool" />
     </div>
   </div>
 </template>
@@ -38,9 +50,13 @@ import { Search } from '@element-plus/icons-vue'
 import request from '../utils/request'
 import ToolGrid from '../components/ToolGrid.vue'
 import { getEnvLabel } from '../config/environment'
+import { useProbeStatus } from '../composables/useProbeStatus'
 
 const RECENT_TOOLS_KEY = 'opsportal-recent-tools'
 const RECENT_TOOLS_LIMIT = 8
+
+const { enabled: probeEnabled, statusOf } = useProbeStatus()
+const statusFilter = ref('all')
 
 const props = defineProps({
   activeProject: {
@@ -103,7 +119,7 @@ const groupedTools = computed(() => {
 })
 
 // 按分类筛选后的分组列表（比较时 trim，避免空格导致不匹配）
-const filteredTools = computed(() => {
+const categoryAndSearchTools = computed(() => {
   let result = groupedTools.value
   const cat = (currentCategory.value || '').trim()
   if (cat && cat !== 'all') {
@@ -116,9 +132,37 @@ const filteredTools = computed(() => {
   return result
 })
 
+function hasDownEnv(tool) {
+  return (tool.envs || []).some(env => statusOf(env.id)?.state === 'down')
+}
+
+const downCount = computed(() => categoryAndSearchTools.value.filter(hasDownEnv).length)
+
+const statusOptions = computed(() => [
+  { label: '全部', value: 'all' },
+  { label: `不可用 ${downCount.value}`, value: 'down' }
+])
+
+const filteredTools = computed(() => {
+  if (statusFilter.value === 'down') {
+    return categoryAndSearchTools.value.filter(hasDownEnv)
+  }
+  return categoryAndSearchTools.value
+})
+
+const sectionTitle = computed(() => {
+  if (statusFilter.value === 'down') return '不可用的工具'
+  return searchQuery.value.trim() ? '搜索结果' : '全部工具'
+})
+
 const showRecentTools = computed(() => {
   const cat = (currentCategory.value || '').trim()
-  return recentTools.value.length > 0 && !searchQuery.value.trim() && (!cat || cat === 'all')
+  return recentTools.value.length > 0 && !searchQuery.value.trim() && (!cat || cat === 'all') && statusFilter.value === 'all'
+})
+
+// 检测功能关闭时回到"全部"
+watch(probeEnabled, (on) => {
+  if (!on) statusFilter.value = 'all'
 })
 
 function toolMatchesSearch(tool, query) {
@@ -235,7 +279,16 @@ onMounted(async () => {
   flex-shrink: 0;
   display: flex;
   justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   padding-bottom: 16px;
+}
+
+.status-filter {
+  flex-shrink: 0;
+  --el-segmented-item-selected-bg-color: var(--primary);
+  --el-segmented-item-selected-color: #fff;
 }
 
 .search-input {

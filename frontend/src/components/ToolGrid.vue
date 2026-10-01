@@ -10,7 +10,7 @@
                   :src="getFavicon(firstUrl(tool))"
                   :alt="tool.name"
                   class="icon-image"
-                  @error="handleIconError(tool)"
+                  @error="handleIconError"
                 />
               </div>
               <div class="favorite-btn" @click.stop="toggleGroupFavorite(tool)">
@@ -33,9 +33,18 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   class="env-tag"
+                  :class="{ 'env-tag--down': statusOf(env.id)?.state === 'down' }"
+                  :title="envTitle(env)"
+                  :aria-label="envAriaLabel(env)"
                   @click="recordRecent(tool)"
                 >
-                  {{ env.environment ?? env.label }}
+                  <span
+                    v-if="statusOf(env.id)"
+                    class="probe-dot"
+                    :class="'probe-dot--' + statusOf(env.id).state"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="env-tag__text">{{ env.environment ?? env.label }}</span>
                 </a>
                 <span v-else class="env-tag env-tag--disabled">{{ env.environment ?? env.label }}</span>
               </template>
@@ -55,8 +64,11 @@
 import { Star, StarFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useFavorites } from '../composables/useFavorites'
+import { useProbeStatus } from '../composables/useProbeStatus'
+import { probeStateText, probeSummary } from '../utils/probe'
 
 const { favoriteIds, isFavorite, saveFavorites } = useFavorites()
+const { statusOf } = useProbeStatus()
 
 const props = defineProps({
   tools: {
@@ -105,19 +117,29 @@ function getFavicon(url) {
   }
 }
 
-function handleIconError(tool) {
-  const url = firstUrl(tool)
+// 直连站点 favicon 失败时用本地默认图标，不把内网域名发给第三方图标服务
+function handleIconError(event) {
   const img = event?.target
-  if (!img?.dataset?.tried) {
-    img.dataset.tried = 'true'
-    try {
-      const urlObj = new URL(url)
-      img.src = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`
-      img.onerror = () => { img.src = '/default-icon.svg' }
-    } catch (e) {
-      img.src = '/default-icon.svg'
-    }
+  if (img && !img.dataset.fallback) {
+    img.dataset.fallback = 'true'
+    img.src = '/default-icon.svg'
   }
+}
+
+function envText(env) {
+  return env.environment ?? env.label
+}
+
+function envTitle(env) {
+  const status = statusOf(env.id)
+  if (!status) return undefined
+  return `${env.label || envText(env)}：${probeSummary(status)}`
+}
+
+function envAriaLabel(env) {
+  const status = statusOf(env.id)
+  if (!status) return undefined
+  return `${envText(env)}（${probeStateText(status)}）`
 }
 
 function getEnvHref(env) {
@@ -405,6 +427,70 @@ p {
 
 .env-tag:hover {
   opacity: 0.9;
+}
+
+.env-tag {
+  gap: 6px;
+}
+
+.env-tag__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 可用性检测状态点 */
+.probe-dot {
+  position: relative;
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-secondary, #9ca3af);
+}
+
+.probe-dot--up {
+  background: #22c55e;
+}
+
+.probe-dot--down {
+  background: #ef4444;
+}
+
+.probe-dot--down::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid #ef4444;
+  opacity: 0;
+  animation: probe-pulse 1.8s ease-out infinite;
+}
+
+.probe-dot--pending {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--text-secondary, #9ca3af);
+}
+
+.env-tag.env-tag--down {
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+@keyframes probe-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .probe-dot--down::after {
+    animation: none;
+  }
 }
 
 .env-tag--disabled {

@@ -58,6 +58,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import ThemeToggle from '../../components/ThemeToggle.vue'
 import ChangePasswordDialog from '../../components/ChangePasswordDialog.vue'
 import request from '../../utils/request'
+import { DEFAULT_PASSWORD_FLAG } from '../../utils/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -102,6 +103,7 @@ const handleCommand = async (command) => {
             await ElMessageBox.confirm('确定要退出登录吗？', '提示', { type: 'warning' })
             localStorage.removeItem('token')
             localStorage.removeItem('user')
+            localStorage.removeItem(DEFAULT_PASSWORD_FLAG)
             ElMessage.success('已退出登录')
             setTimeout(() => {
                 router.push('/monitor')
@@ -115,6 +117,10 @@ const handleCommand = async (command) => {
 
 onMounted(() => {
     fetchLogo()
+    // 仍在使用默认密码时，进入后台就提示修改
+    if (showUserInfo.value && localStorage.getItem(DEFAULT_PASSWORD_FLAG)) {
+        changePasswordDialogRef.value?.show({ insecure: true })
+    }
 })
 </script>
 

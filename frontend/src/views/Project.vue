@@ -1,7 +1,7 @@
 <template>
   <div class="project-content">
     <div class="header-actions">
-      <el-button type="primary" @click="showAddDialog = true">
+      <el-button type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon>添加项目
       </el-button>
     </div>
@@ -27,6 +27,7 @@
       :title="dialogType === 'add' ? '添加项目' : '编辑项目'"
       v-model="showAddDialog"
       width="500px"
+      @closed="handleDialogClose"
     >
       <el-form
         ref="formRef"
@@ -123,6 +124,13 @@ const handleSubmit = async () => {
       }
     }
   })
+}
+
+// 处理添加：每次都从空表单开始，避免沿用上一次编辑的项目 id
+const handleAdd = () => {
+  resetForm()
+  dialogType.value = 'add'
+  showAddDialog.value = true
 }
 
 // 处理编辑
