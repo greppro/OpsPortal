@@ -170,7 +170,6 @@ const fetchData = async () => {
       request.get('/api/environments'),
       request.get('/api/projects')
     ])
-    console.log('Projects data:', projsRes.data)
     environmentList.value = envsRes.data
     projectList.value = projsRes.data
   } catch (error) {
@@ -261,7 +260,6 @@ const handleProjectChange = (projectId) => {
   const project = projectList.value.find(p => p.id === projectId)
   if (project) {
     form.value.project = project.name
-    console.log('Selected project:', project)
   }
 }
 

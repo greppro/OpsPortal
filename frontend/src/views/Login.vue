@@ -54,6 +54,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '../utils/request'
+import { DEFAULT_PASSWORD_FLAG } from '../utils/auth'
 
 const router = useRouter()
 const loading = ref(false)
@@ -80,6 +81,11 @@ const handleSubmit = async () => {
         const response = await request.post('/api/auth/login', form.value)
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('user', response.data.user.username)
+        if (response.data.default_password) {
+          localStorage.setItem(DEFAULT_PASSWORD_FLAG, '1')
+        } else {
+          localStorage.removeItem(DEFAULT_PASSWORD_FLAG)
+        }
         
         ElMessage({
           type: 'success',

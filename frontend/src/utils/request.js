@@ -37,6 +37,11 @@ request.interceptors.response.use(
             return Promise.reject(error)
         }
 
+        // 后台轮询等静默请求：失败时不打扰用户
+        if (error.config?.silent) {
+            return Promise.reject(error)
+        }
+
         ElMessage.error(msg || '请求失败')
         return Promise.reject(error)
     }

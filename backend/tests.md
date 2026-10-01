@@ -7,7 +7,7 @@
 # 成功登录
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username":"admin","password":"<your-password>"}'
 
 # 错误密码
 curl -X POST http://localhost:8080/api/auth/login \
@@ -26,7 +26,7 @@ curl -X POST http://localhost:8080/api/auth/login \
 curl -X POST http://localhost:8080/api/auth/change-password \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"oldPassword":"admin123","newPassword":"newpass123"}'
+  -d '{"oldPassword":"<your-password>","newPassword":"newpass123"}'
 
 # 旧密码错误
 curl -X POST http://localhost:8080/api/auth/change-password \

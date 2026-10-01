@@ -8,9 +8,20 @@ services:
     container_name: opsportal-backend
     volumes:
       - ./data:/app/data
+      - ./uploads:/app/uploads
     environment:
       - TZ=Asia/Shanghai
       - GIN_MODE=release
+      # 以下变量可写在与本文件同目录的 .env 中，参考 .env.example
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET:-}
+      - METRICS_TOKEN=${METRICS_TOKEN:-}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-}
+      - PROBE_ENABLED=${PROBE_ENABLED:-true}
+      - PROBE_INTERVAL=${PROBE_INTERVAL:-60s}
+      - PROBE_TIMEOUT=${PROBE_TIMEOUT:-5s}
+      - PROBE_CONCURRENCY=${PROBE_CONCURRENCY:-10}
+      - PROBE_INSECURE_SKIP_VERIFY=${PROBE_INSECURE_SKIP_VERIFY:-false}
     networks:
       - app-network
     healthcheck:

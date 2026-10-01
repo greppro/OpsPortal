@@ -1,8 +1,14 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"log"
 	"ops-portal/models"
+	"ops-portal/utils"
+	"os"
+	"path/filepath"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -10,14 +16,26 @@ import (
 
 var DB *gorm.DB
 
-func InitDB() {
+const (
+	defaultAdminUsername = "admin"
+	keyJWTSecret         = "jwt_secret"
+)
+
+func InitDB(s Settings) {
 	var err error
-	DB, err = gorm.Open(sqlite.Open("data/opsportal.db"), &gorm.Config{})
+	if dir := filepath.Dir(s.DBPath); dir != "" {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			log.Fatalf("Failed to create database directory %s: %v", dir, err)
+		}
+	}
+
+	// busy_timeout：后台探测在读库时，写操作等待锁而不是直接报 database is locked
+	DB, err = gorm.Open(sqlite.Open(s.DBPath+"?_busy_timeout=5000"), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	// 自动迁移数据库表
+	// 自动迁移数据库表（只增加缺少的表和列，不删除已有数据）
 	err = DB.AutoMigrate(
 		&models.Tool{},
 		&models.Project{},
@@ -26,34 +44,14 @@ func InitDB() {
 		&models.Logo{},
 		&models.SystemConfig{},
 		&models.Category{},
+		&models.User{},
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
 
-	// 自动迁移用户表
-	DB.AutoMigrate(&models.User{})
-
-	// 修改 Environment 模型的迁移
-	if err := DB.Migrator().DropTable(&models.Environment{}); err != nil {
-		log.Printf("Failed to drop environments table: %v", err)
-	}
-
-	// 重新创建环境表
-	if err := DB.AutoMigrate(&models.Environment{}); err != nil {
-		log.Printf("Failed to migrate environments table: %v", err)
-	}
-
-	DB.AutoMigrate(&models.Project{})
-
-	// 初始化默认用户
-	var userCount int64
-	DB.Model(&models.User{}).Count(&userCount)
-	if userCount == 0 {
-		DB.Create(&models.User{
-			Username: "admin",
-			Password: "admin123",
-		})
+	if err := initAdminUser(s.AdminPassword); err != nil {
+		log.Fatal("Failed to initialize admin user:", err)
 	}
 
 	// 初始化默认项目（4 个项目模拟企业多项目）
@@ -238,11 +236,92 @@ func InitDB() {
 			}
 		}
 	}
+}
 
-	// 自动迁移 Notice 模型
-	err = DB.AutoMigrate(&models.Notice{})
-	if err != nil {
-		log.Fatal("Failed to migrate Notice model:", err)
+// initAdminUser 首次启动时创建管理员；已有用户时把旧版本留下的明文密码转成 bcrypt 哈希。
+func initAdminUser(adminPassword string) error {
+	var users []models.User
+	if err := DB.Find(&users).Error; err != nil {
+		return err
 	}
 
+	if len(users) == 0 {
+		password := adminPassword
+		generated := password == ""
+		if generated {
+			var err error
+			if password, err = utils.RandomString(16); err != nil {
+				return err
+			}
+		}
+		if len(password) > utils.MaxPasswordBytes {
+			return fmt.Errorf("ADMIN_PASSWORD 不能超过 %d 字节", utils.MaxPasswordBytes)
+		}
+		hash, err := utils.HashPassword(password)
+		if err != nil {
+			return err
+		}
+		if err := DB.Create(&models.User{Username: defaultAdminUsername, Password: hash}).Error; err != nil {
+			return err
+		}
+		if generated {
+			log.Printf("==================================================================")
+			log.Printf("已创建管理员账号 %s，初始密码：%s", defaultAdminUsername, password)
+			log.Printf("该密码只在首次启动时显示一次，请登录后台后立即修改。")
+			log.Printf("也可以在首次启动前通过环境变量 ADMIN_PASSWORD 指定初始密码。")
+			log.Printf("==================================================================")
+		} else {
+			log.Printf("已使用 ADMIN_PASSWORD 创建管理员账号 %s", defaultAdminUsername)
+		}
+		return nil
+	}
+
+	for _, u := range users {
+		if utils.IsPasswordHash(u.Password) {
+			continue
+		}
+		plain := u.Password
+		if len(plain) > utils.MaxPasswordBytes {
+			plain = plain[:utils.MaxPasswordBytes]
+		}
+		hash, err := utils.HashPassword(plain)
+		if err != nil {
+			return err
+		}
+		if err := DB.Model(&models.User{}).Where("id = ?", u.ID).Update("password", hash).Error; err != nil {
+			return err
+		}
+		log.Printf("用户 %s 的密码已从明文迁移为 bcrypt 哈希", u.Username)
+		if plain == utils.LegacyDefaultPassword {
+			log.Printf("安全提醒：用户 %s 仍在使用默认密码，请登录后台后立即修改", u.Username)
+		}
+	}
+	return nil
+}
+
+// InitJWTSecret 返回 JWT 签名密钥：优先用 JWT_SECRET；未设置时读取数据库里保存的密钥，
+// 没有则随机生成一个并保存，保证重启后已登录的 token 仍然有效。
+func InitJWTSecret(s Settings) ([]byte, error) {
+	if s.JWTSecret != "" {
+		return []byte(s.JWTSecret), nil
+	}
+
+	var rows []models.SystemConfig
+	if err := DB.Where("key = ?", keyJWTSecret).Limit(1).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	if len(rows) == 1 && len(rows[0].Value) >= 32 {
+		return []byte(rows[0].Value), nil
+	}
+
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return nil, err
+	}
+	secret := hex.EncodeToString(buf)
+	if err := DB.Save(&models.SystemConfig{Key: keyJWTSecret, Value: secret}).Error; err != nil {
+		return nil, err
+	}
+	log.Printf("未设置 JWT_SECRET，已生成随机密钥并保存在数据库中")
+	return []byte(secret), nil
 }

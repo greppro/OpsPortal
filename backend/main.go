@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net"
 	"ops-portal/config"
 	"ops-portal/handlers"
 	"ops-portal/middleware"
+	"ops-portal/probe"
+	"ops-portal/utils"
 	"os"
 
 	_ "ops-portal/docs"
@@ -30,7 +34,6 @@ import (
 // 初始化必要的目录
 func initDirectories() {
 	dirs := []string{
-		"data",
 		"uploads",
 		"uploads/logos",
 	}
@@ -44,23 +47,63 @@ func initDirectories() {
 }
 
 func main() {
+	settings := config.LoadSettings()
+
 	// 初始化目录
 	initDirectories()
 
-	// 初始化数据库
-	config.InitDB()
+	// 初始化数据库、管理员账号和 JWT 密钥
+	config.InitDB(settings)
+	secret, err := config.InitJWTSecret(settings)
+	if err != nil {
+		log.Fatal("Failed to initialize JWT secret:", err)
+	}
+	utils.SetJWTSecret(secret)
 
+	// 启动内置可用性检测
+	p := probe.New(probe.Config{
+		Enabled:            settings.Probe.Enabled,
+		Interval:           settings.Probe.Interval,
+		Timeout:            settings.Probe.Timeout,
+		Concurrency:        settings.Probe.Concurrency,
+		InsecureSkipVerify: settings.Probe.InsecureSkipVerify,
+	}, handlers.ProbeTargets)
+	handlers.SetProber(p)
+	go p.Run(context.Background())
+
+	r := setupRouter(settings)
+	if err := r.Run(net.JoinHostPort(settings.Host, settings.Port)); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// uploadSecurityHeaders 上传目录只放图片：禁止内容嗅探和脚本执行，
+// 防止有人直接打开上传的 SVG 时执行其中嵌入的脚本。
+func uploadSecurityHeaders() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox")
+		c.Next()
+	}
+}
+
+func setupRouter(settings config.Settings) *gin.Engine {
 	r := gin.Default()
 
-	// 配置跨域
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
+	// 跨域默认关闭：前端通过同源反向代理访问后端。确实需要跨域时用 CORS_ALLOW_ORIGINS 指定来源
+	if len(settings.CORSAllowOrigins) > 0 {
+		corsConfig := cors.Config{
+			AllowOrigins:  settings.CORSAllowOrigins,
+			AllowMethods:  []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowHeaders:  []string{"Origin", "Content-Type", "Accept", "Authorization"},
+			ExposeHeaders: []string{"Content-Length"},
+			MaxAge:        12 * time.Hour,
+		}
+		if err := corsConfig.Validate(); err != nil {
+			log.Fatalf("CORS_ALLOW_ORIGINS 配置无效：%v（示例：https://portal.example.com,https://other.example.com）", err)
+		}
+		r.Use(cors.New(corsConfig))
+	}
 
 	// Swagger 文档路由
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler,
@@ -89,9 +132,8 @@ func main() {
 		public.GET("/api/environments", handlers.GetEnvironmentsByProject)
 		public.GET("/api/projects", handlers.GetProjects)
 
-		// 公告相关的公开接口
-		public.GET("/api/notices/active", handlers.GetActiveNotice) // 获取当前激活的公告
-		public.GET("/api/notices", handlers.GetNotices)             // 获取公告列表
+		// 公告相关的公开接口（只返回当前激活的公告）
+		public.GET("/api/notices/active", handlers.GetActiveNotice)
 
 		// Logo 相关的公开接口
 		public.GET("/api/logo", handlers.GetLogo)
@@ -102,6 +144,9 @@ func main() {
 
 		// 分类列表（公开，供首页侧边栏与分类管理页使用）
 		public.GET("/api/categories", handlers.GetCategories)
+
+		// 可用性检测结果（首页状态点使用）
+		public.GET("/api/probe/status", handlers.GetProbeStatus)
 	}
 
 	// 需要认证的路由组
@@ -126,7 +171,8 @@ func main() {
 		auth.PUT("/projects/:id", handlers.UpdateProject)
 		auth.DELETE("/projects/:id", handlers.DeleteProject)
 
-		// 公告管理相关接口
+		// 公告管理相关接口（列表含未激活的草稿，只对管理员开放）
+		auth.GET("/notices", handlers.GetNotices)
 		auth.POST("/notices", handlers.CreateNotice)
 		auth.PUT("/notices/:id", handlers.UpdateNotice)
 		auth.DELETE("/notices/:id", handlers.DeleteNotice)
@@ -143,10 +189,21 @@ func main() {
 		auth.POST("/categories", handlers.CreateCategory)
 		auth.PUT("/categories/:id", handlers.UpdateCategory)
 		auth.DELETE("/categories/:id", handlers.DeleteCategory)
+
+		// 立即检测某个工具
+		auth.POST("/probe/check/:id", handlers.CheckToolNow)
 	}
 
-	// 添加静态文件服务
-	r.Static("/uploads", "./uploads")
+	// Prometheus 对接：指标抓取和 http_sd 服务发现（设置 METRICS_TOKEN 后需要 Bearer Token）
+	prom := r.Group("", handlers.MetricsAuth(settings.MetricsToken))
+	{
+		prom.GET("/metrics", handlers.Metrics)
+		prom.GET("/prometheus/targets", handlers.PrometheusTargets)
+	}
 
-	r.Run(":8080")
+	// 上传文件（Logo）
+	uploads := r.Group("/uploads", uploadSecurityHeaders())
+	uploads.Static("/", "./uploads")
+
+	return r
 }

@@ -20,6 +20,8 @@ backend/*.dylib
 
 # 数据与运行时
 data/
+uploads/
+.env
 
 # 编辑器与 IDE
 .cursor/

@@ -1,0 +1,6 @@
+# 本地数据库里有密码哈希和 JWT 密钥，不能打进镜像
+data/
+*.db
+uploads/
+tmp/
+main
